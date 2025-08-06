@@ -401,28 +401,6 @@ export default function OrderList() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      الحالة
-                    </label>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedOrder.status)}`}>
-                      {getStatusText(selectedOrder.status)}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      الأولوية
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(selectedOrder.priority)}`}></div>
-                      <span className="text-gray-800 dark:text-white font-medium">
-                        {getPriorityText(selectedOrder.priority)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 {selectedOrder.notes && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -446,7 +424,7 @@ export default function OrderList() {
             </div>
           </div>
         </div>
-      )}</div>
+      )}
 
       {/* Edit Order Modal */}
       {orderToEdit && (
