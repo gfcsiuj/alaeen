@@ -197,7 +197,12 @@ export default function OrderList() {
                     <span className="text-sm">عرض</span>
                   </button>
                   <button
-                    onClick={() => setOrderToEdit(order)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOrderToEdit(order);
+                      console.log('Edit button clicked, order:', order);
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -454,7 +459,11 @@ export default function OrderList() {
 
       {/* Edit Order Modal */}
       {orderToEdit && (
-        <EditOrder order={orderToEdit} onClose={() => setOrderToEdit(null)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <EditOrder order={orderToEdit} onClose={() => setOrderToEdit(null)} />
+          </div>
+        </div>
       )}
     </div>
   );

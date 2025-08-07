@@ -10,6 +10,13 @@ interface EditOrderProps {
 
 export default function EditOrder({ order, onClose }: EditOrderProps) {
   const { updateOrder } = useApp();
+  
+  // Add a close button handler with confirmation
+  const handleClose = () => {
+    if (confirm('هل أنت متأكد من إغلاق نافذة التعديل؟ سيتم فقدان جميع التغييرات غير المحفوظة.')) {
+      onClose();
+    }
+  };
   const [formData, setFormData] = useState({
     id: '',
     customerName: '',
@@ -60,13 +67,14 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
   useEffect(() => {
     // Initialize form data with order data
     if (order) {
+      console.log('Order received in EditOrder:', order);
       setFormData({
         ...order,
         // خدمة الترويج
         promotionAmountUSD: order.promotionAmountUSD || 0,
         promotionAmount: order.promotionAmount || 0,
         promotionCurrency: order.promotionCurrency || 'usd',
-        promotionProfit: order.promotionCommission || 0, // العمولة تحسب كربح
+        promotionProfit: order.promotionProfit || 0, // العمولة تحسب كربح
         promotionCommission: order.promotionCommission || 0,
         promotionAmountReceived: order.promotionAmountReceived || 'none',
         promotionAmountReceivedPercentage: order.promotionAmountReceivedPercentage || '',
@@ -143,19 +151,23 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Convert date objects to strings if needed
+    const dateStr = formData.date instanceof Date ? formData.date.toISOString() : formData.date;
+    const createdAtStr = order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt;
+    
     const updatedOrder: Order = {
       ...formData,
       // Preserve the original createdAt date
-      createdAt: order.createdAt,
+      createdAt: createdAtStr,
       // Update the date to reflect when it was modified
-      date: new Date(),
+      date: dateStr,
       serviceType: formData.serviceType || undefined,
       // خدمة الترويج
       promotionAmountUSD: formData.serviceType === 'promotion' ? formData.promotionAmountUSD : undefined,
       promotionAmount: formData.serviceType === 'promotion' ? formData.promotionAmount : undefined,
       promotionAmountReceived: formData.serviceType === 'promotion' ? formData.promotionAmountReceived : undefined,
       promotionAmountReceivedPercentage: formData.serviceType === 'promotion' ? formData.promotionAmountReceivedPercentage : undefined,
-      promotionProfit: formData.serviceType === 'promotion' ? formData.promotionCommission : undefined, // العمولة تحسب كربح
+      promotionProfit: formData.serviceType === 'promotion' ? formData.promotionProfit : undefined, // تصحيح: استخدام promotionProfit بدلاً من promotionCommission
       promotionCurrency: formData.serviceType === 'promotion' ? formData.promotionCurrency : undefined,
       promotionCommission: formData.serviceType === 'promotion' ? formData.promotionCommission : undefined,
       // خدمة التصميم
@@ -172,6 +184,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
       printingEmployeeAmount: formData.serviceType === 'printing' ? formData.printingEmployeeAmount : undefined
     };
     
+    console.log('Updating order:', updatedOrder);
     updateOrder(updatedOrder);
     onClose();
   };
@@ -208,7 +221,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative animate-slide-up">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-700 rounded-full p-2 shadow-md hover:shadow-lg transition-all duration-200 z-10"
           aria-label="إغلاق"
         >
@@ -792,7 +805,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
             <div className="flex gap-4 mt-8">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="w-1/3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <div className="flex items-center justify-center">

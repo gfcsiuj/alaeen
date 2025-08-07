@@ -26,6 +26,15 @@ export function Analytics() {
     }
 
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.price, 0);
+    
+    // حساب إجمالي أرباح العمولة من خدمة الترويج
+    const totalPromotionProfit = filteredOrders.reduce((sum, order) => {
+      // إذا كان نوع الخدمة هو الترويج وهناك عمولة، نضيفها إلى الأرباح
+      if (order.serviceType === 'promotion' && order.promotionCommission) {
+        return sum + (parseFloat(order.promotionCommission.toString()) || 0);
+      }
+      return sum;
+    }, 0);
     const totalDiscounts = filteredOrders.reduce((sum, order) => {
       const discount = order.discount || 0;
       return sum + (order.discountType === 'percentage' ? (order.price * discount) / 100 : discount);
@@ -47,7 +56,8 @@ export function Analytics() {
       return sum + orderTotal;
     }, 0);
 
-    const netProfit = totalRevenue - totalDiscounts + totalTax - totalWorkerShares;
+    // إضافة أرباح العمولة إلى الأرباح الصافية
+    const netProfit = totalRevenue - totalDiscounts + totalTax - totalWorkerShares + totalPromotionProfit;
     const totalOrders = filteredOrders.length;
 
     return {
@@ -55,6 +65,7 @@ export function Analytics() {
       totalDiscounts,
       totalTax,
       totalWorkerShares,
+      totalPromotionProfit,
       netProfit,
       totalOrders,
       workerShares,
@@ -134,7 +145,7 @@ export function Analytics() {
         </div>
 
         {/* Main Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-gradient-to-br from-primary-500 to-pink-500 rounded-2xl p-6 text-white shadow-xl animate-slide-up transform hover:scale-105 transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
@@ -180,6 +191,20 @@ export function Analytics() {
             </div>
           </div>
 
+          <div className="bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl p-6 text-white shadow-xl animate-slide-up transform hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-bold">أرباح العمولة</p>
+                <div className="text-3xl font-bold mt-2">
+                  {analyticsData.totalPromotionProfit.toLocaleString('ar-IQ')}
+                </div>
+                <p className="text-xs text-purple-100 mt-1">دينار عراقي</p>
+              </div>
+              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+                <DollarSign className="w-7 h-7" />
+              </div>
+            </div>
+          </div>
 
         </div>
 
@@ -220,6 +245,13 @@ export function Analytics() {
                 <span className="font-bold text-orange-800 dark:text-orange-200">إجمالي مبلغ العمال</span>
                 <span className="font-bold text-orange-600 dark:text-orange-400 text-lg">
                   -{analyticsData.totalWorkerShares.toLocaleString('ar-IQ')} د.ع
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                <span className="font-bold text-purple-800 dark:text-purple-200">أرباح العمولة (الترويج)</span>
+                <span className="font-bold text-purple-600 dark:text-purple-400 text-lg">
+                  +{analyticsData.totalPromotionProfit.toLocaleString('ar-IQ')} د.ع
                 </span>
               </div>
               

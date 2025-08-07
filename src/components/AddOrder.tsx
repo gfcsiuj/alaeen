@@ -67,6 +67,7 @@ export function AddOrder() {
     const price = parseFloat(formData.price) || 0;
     const discount = parseFloat(formData.discount) || 0;
     const tax = parseFloat(formData.tax) || 0;
+    const promotionCommission = parseFloat(formData.promotionCommission) || 0;
     
     let discountAmount = 0;
     if (formData.discountType === 'percentage') {
@@ -77,7 +78,14 @@ export function AddOrder() {
     
     const afterDiscount = price - discountAmount;
     const taxAmount = (afterDiscount * tax) / 100;
-    const finalAmount = afterDiscount + taxAmount;
+    let finalAmount = afterDiscount + taxAmount;
+    
+    // إذا كان نوع الخدمة هو الترويج، نستخدم العمولة كمبلغ نهائي
+    // لأن العمولة تحسب كربح بالدينار العراقي في الأرباح الصافية
+    if (formData.serviceType === 'promotion') {
+      // في حالة الترويج، المبلغ النهائي هو العمولة فقط
+      finalAmount = promotionCommission;
+    }
     
     const totalWorkerShares = formData.workers.reduce((sum, worker) => sum + (worker.share || 0), 0);
     
@@ -642,6 +650,11 @@ export function AddOrder() {
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {(totals.finalAmount - totals.totalWorkerShares).toLocaleString('ar-IQ')} دينار عراقي
                 </p>
+                {formData.serviceType === 'promotion' && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    (العمولة تحسب كربح بالدينار العراقي في الأرباح الصافية)
+                  </p>
+                )}
               </div>
             </div>
           </div>
