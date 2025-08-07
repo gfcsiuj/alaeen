@@ -617,17 +617,13 @@ export function AddOrder() {
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                       نوع العمل
                     </label>
-                    <div className="flex flex-wrap gap-3">
-                      {['تصميم', 'تصوير', 'طباعة', 'ترويج', 'أخرى'].map(type => (
-                        <div 
-                          key={type}
-                          onClick={() => updateWorker(index, 'workType', type)}
-                          className={`px-4 py-2 rounded-xl border cursor-pointer transition-all duration-300 ${worker.workType === type ? 'bg-primary-50 border-primary-500 shadow-md dark:bg-primary-900/30 dark:border-primary-500 text-primary-700 dark:text-primary-400' : 'bg-white border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
-                        >
-                          {type}
-                        </div>
-                      ))}
-                    </div>
+                    <input
+                      type="text"
+                      value={worker.workType}
+                      onChange={(e) => updateWorker(index, 'workType', e.target.value)}
+                      placeholder="نوع العمل"
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    />
                   </div>
                 </div>
               ))}
