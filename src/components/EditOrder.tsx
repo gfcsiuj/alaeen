@@ -506,16 +506,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
               </div>
             </div>
             
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-700 dark:text-blue-300 flex-grow">
-                <p className="font-medium">تعليمات استخدام نافذة التعديل:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>تأكد من اختيار نوع الخدمة الصحيح قبل الحفظ</li>
-                  <li>إذا واجهت مشكلة في الحفظ، استخدم زر إعادة التحميل ثم حاول مرة أخرى</li>
-                  <li>انقر على علامة الاستفهام للحصول على مزيد من المساعدة</li>
-                </ul>
-              </div>
+            <div className="flex justify-end">
               <button
                 onClick={showDebugInfo}
                 className="flex-shrink-0 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-lg px-3 py-1 text-xs font-medium transition-colors"
