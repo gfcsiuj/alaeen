@@ -370,6 +370,14 @@ export function AddOrder() {
                     </label>
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    نسبة الترويج
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.promotionPercentage}
+                    onChange={(e) => setFormData(prev => ({ ...prev, promotionPercentage: e.target.value }))}
                     className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
                     placeholder="0"
                   />
@@ -383,6 +391,19 @@ export function AddOrder() {
                     type="number"
                     value={formData.promotionProfit}
                     onChange={(e) => setFormData(prev => ({ ...prev, promotionProfit: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    placeholder="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    نسبة الترويج
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.promotionPercentage}
+                    onChange={(e) => setFormData(prev => ({ ...prev, promotionPercentage: e.target.value }))}
                     className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
                     placeholder="0"
                   />
