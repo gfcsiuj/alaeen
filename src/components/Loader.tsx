@@ -55,6 +55,7 @@ export function Loader({ minDisplayTime = 2000 }: LoaderProps) {
       
       <p className="mt-12 text-xs text-gray-400 dark:text-gray-500 animate-fade-in">
         © {new Date().getFullYear()} العين للأحصائيات المالية
+      </p>
     </div>
   );
 }
