@@ -11,6 +11,12 @@ export default function OrderList() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
+  
+  // Function to reload the page
+  const handleReload = () => {
+    console.log('Reloading page...');
+    window.location.reload();
+  };
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,7 +90,7 @@ export default function OrderList() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 pb-20">
       {/* Header */}
-      <div className="flex items-center justify-center mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full border-4 border-primary bg-white dark:bg-gray-800 flex items-center justify-center shadow-lg">
             <img 
@@ -95,8 +101,39 @@ export default function OrderList() {
           </div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">الطلبات السابقة</h1>
         </div>
+        <button 
+          onClick={handleReload}
+          className="flex items-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
+          title="إعادة تحميل الصفحة لحل مشاكل التعديل"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+          </svg>
+          <span className="text-sm">تحديث</span>
+        </button>
       </div>
 
+      {/* Alert Message */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-lg">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="mr-3">
+            <p className="text-sm text-yellow-700">
+              <strong>ملاحظة:</strong> إذا واجهت مشكلة في تعديل الطلبات، يرجى اتباع الخطوات التالية:
+            </p>
+            <ol className="mt-1 text-sm text-yellow-700 list-decimal list-inside">
+              <li>انقر على زر "تحديث" في الأعلى لإعادة تحميل الصفحة</li>
+              <li>افتح وحدة تحكم المتصفح (F12) لمراقبة الأخطاء</li>
+              <li>حاول تعديل الطلب مرة أخرى</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      
       {/* Search and Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="space-y-4">
@@ -200,8 +237,13 @@ export default function OrderList() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setOrderToEdit(order);
                       console.log('Edit button clicked, order:', order);
+                      console.log('Order ID:', order.id);
+                      console.log('Order data type check:', typeof order);
+                      // Create a deep copy of the order to avoid reference issues
+                      const orderCopy = JSON.parse(JSON.stringify(order));
+                      console.log('Order copy created:', orderCopy);
+                      setOrderToEdit(orderCopy);
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
                   >
@@ -459,9 +501,15 @@ export default function OrderList() {
 
       {/* Edit Order Modal */}
       {orderToEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <EditOrder order={orderToEdit} onClose={() => setOrderToEdit(null)} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <EditOrder 
+              order={orderToEdit} 
+              onClose={() => {
+                console.log('Closing edit modal');
+                setOrderToEdit(null);
+              }} 
+            />
           </div>
         </div>
       )}

@@ -28,9 +28,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateOrder = (updatedOrder: Order) => {
-    setOrders(prev => prev.map(order => 
-      order.id === updatedOrder.id ? updatedOrder : order
-    ));
+    console.log('AppContext: updateOrder called with:', updatedOrder);
+    console.log('AppContext: Current orders before update:', orders);
+    
+    try {
+      // التحقق من وجود البيانات الأساسية
+      if (!updatedOrder.id) {
+        console.error('AppContext: Cannot update order - missing ID');
+        throw new Error('معرف الطلب مفقود');
+      }
+      
+      if (!updatedOrder.customerName) {
+        console.error('AppContext: Cannot update order - missing customer name');
+        throw new Error('اسم العميل مفقود');
+      }
+      
+      if (!updatedOrder.serviceType) {
+        console.error('AppContext: Cannot update order - missing service type');
+        throw new Error('نوع الخدمة مفقود');
+      }
+      
+      // البحث عن الطلب المراد تحديثه
+      const orderExists = orders.some(order => order.id === updatedOrder.id);
+      if (!orderExists) {
+        console.error(`AppContext: Order with ID ${updatedOrder.id} not found`);
+        throw new Error(`الطلب برقم ${updatedOrder.id} غير موجود`);
+      }
+      
+      // العثور على الطلب الأصلي للمقارنة
+      const originalOrder = orders.find(order => order.id === updatedOrder.id);
+      console.log('AppContext: Original order:', originalOrder);
+      
+      // تحديث الطلب
+      setOrders(prev => {
+        const newOrders = prev.map(order => 
+          order.id === updatedOrder.id ? updatedOrder : order
+        );
+        console.log('AppContext: Updated orders:', newOrders);
+        return newOrders;
+      });
+      
+      console.log('AppContext: Order updated successfully');
+    } catch (error) {
+      console.error('AppContext: Error in updateOrder:', error);
+      throw error; // إعادة رمي الخطأ ليتم التعامل معه في المكون
+    }
   };
 
   return (
