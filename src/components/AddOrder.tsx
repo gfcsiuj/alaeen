@@ -370,216 +370,15 @@ export function AddOrder() {
                     </label>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    نسبة الترويج
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.promotionPercentage}
-                    onChange={(e) => setFormData(prev => ({ ...prev, promotionPercentage: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    الربح من الترويج
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.promotionProfit}
-                    onChange={(e) => setFormData(prev => ({ ...prev, promotionProfit: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    نسبة الترويج
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.promotionPercentage}
-                    onChange={(e) => setFormData(prev => ({ ...prev, promotionPercentage: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
-                  />
-                </div>
               </div>
             </div>
           )}
           
-          {formData.serviceType === 'design' && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-                  <Palette className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                </div>
-                تفاصيل خدمة التصميم
-              </h2>
-              
-              <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    أنواع التصميم
-                  </label>
-                  <div className="flex flex-wrap gap-3">
-                    {['لوجو', 'بوستر', 'بطاقة', 'بنر', 'فلاير', 'أخرى'].map(type => (
-                      <div 
-                        key={type}
-                        onClick={() => {
-                          setFormData(prev => {
-                            const types = [...prev.designTypes];
-                            if (types.includes(type)) {
-                              return { ...prev, designTypes: types.filter(t => t !== type) };
-                            } else {
-                              return { ...prev, designTypes: [...types, type] };
-                            }
-                          });
-                        }}
-                        className={`px-4 py-2 rounded-xl border cursor-pointer transition-all duration-300 ${formData.designTypes.includes(type) ? 'bg-primary-50 border-primary-500 shadow-md dark:bg-primary-900/30 dark:border-primary-500 text-primary-700 dark:text-primary-400' : 'bg-white border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
-                      >
-                        {type}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Design service section removed as requested */}
           
-          {formData.serviceType === 'photography' && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-                  <Camera className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                </div>
-                تفاصيل خدمة التصوير
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    تفاصيل التصوير
-                  </label>
-                  <textarea
-                    value={formData.photographyDetails}
-                    onChange={(e) => setFormData(prev => ({ ...prev, photographyDetails: e.target.value }))}
-                    rows={3}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none transition-all duration-300 hover:shadow-md"
-                    placeholder="وصف تفصيلي لخدمة التصوير"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    مبلغ التصوير
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.photographyAmount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, photographyAmount: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    اسم المصور
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.photographerName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, photographerName: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="اسم المصور"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    مبلغ المصور
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.photographerAmount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, photographerAmount: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Photography service section removed as requested */}
           
-          {formData.serviceType === 'printing' && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-                  <Printer className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                </div>
-                تفاصيل خدمة الطباعة
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    تفاصيل الطباعة
-                  </label>
-                  <textarea
-                    value={formData.printingDetails}
-                    onChange={(e) => setFormData(prev => ({ ...prev, printingDetails: e.target.value }))}
-                    rows={3}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none transition-all duration-300 hover:shadow-md"
-                    placeholder="وصف تفصيلي لخدمة الطباعة"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    مبلغ الطباعة
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.printingAmount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, printingAmount: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    اسم موظف الطباعة
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.printingEmployeeName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, printingEmployeeName: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="اسم موظف الطباعة"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    مبلغ موظف الطباعة
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.printingEmployeeAmount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, printingEmployeeAmount: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Printing service section removed as requested */}
 
           {/* Basic Order Info */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
@@ -587,7 +386,11 @@ export function AddOrder() {
               <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
                 <Plus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
-              معلومات الطلب الأساسية
+              {formData.serviceType === 'promotion' ? 'معلومات طلب الترويج' : 
+               formData.serviceType === 'design' ? 'معلومات طلب التصميم' : 
+               formData.serviceType === 'photography' ? 'معلومات طلب التصوير' : 
+               formData.serviceType === 'printing' ? 'معلومات طلب الطباعة' : 
+               'معلومات الطلب الأساسية'}
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -619,34 +422,38 @@ export function AddOrder() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  السعر الأساسي (دينار عراقي) *
-                </label>
-                <input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                  required
-                  placeholder="0"
-                />
-              </div>
+              {formData.serviceType !== 'promotion' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      السعر الأساسي (دينار عراقي) *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                      required
+                      placeholder="0"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  العدد *
-                </label>
-                <input
-                  type="number"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                  min="1"
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                  required
-                  placeholder="1"
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      العدد *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.quantity}
+                      onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
+                      min="1"
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                      required
+                      placeholder="1"
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
