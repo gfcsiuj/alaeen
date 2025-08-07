@@ -94,7 +94,7 @@ export default function OrderList() {
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full border-4 border-primary bg-white dark:bg-gray-800 flex items-center justify-center shadow-lg">
             <img 
-              src="/logo.png"
+              src="./images/logo.jpg"
               alt="العين" 
               className="w-8 h-8 rounded-full object-cover"
             />

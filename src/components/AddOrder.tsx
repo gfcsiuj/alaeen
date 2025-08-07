@@ -205,7 +205,7 @@ export function AddOrder() {
         <div className="text-center mb-6">
           <div className="w-16 h-16 mx-auto mb-4 animate-bounce-in">
             <img 
-              src="/logo.png"
+              src="./images/logo.jpg"
               alt="العين"
               className="w-full h-full rounded-full object-cover logo-frame"
             />
