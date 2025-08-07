@@ -259,11 +259,37 @@ export default function OrderList() {
                       نوع الخدمة: <span className="font-bold">{selectedOrder.serviceType}</span>
                     </label>
                     
-                    {selectedOrder.serviceType === 'promotion' && selectedOrder.promotionAmount > 0 && (
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          مبلغ الترويج: <span className="font-medium">{selectedOrder.promotionAmount.toLocaleString()} د.ع</span>
-                        </p>
+                    {selectedOrder.serviceType === 'promotion' && (
+                      <div className="mt-2 space-y-2">
+                        <div className="space-y-1">
+                          {selectedOrder.promotionAmountUSD > 0 && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              مبلغ الترويج بالدولار: <span className="font-medium">{selectedOrder.promotionAmountUSD.toLocaleString()} $</span>
+                            </p>
+                          )}
+                          {selectedOrder.promotionAmount > 0 && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              مبلغ الترويج بالدينار: <span className="font-medium">{selectedOrder.promotionAmount.toLocaleString()} د.ع</span>
+                            </p>
+                          )}
+                          {selectedOrder.promotionCommission > 0 && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              العمولة: <span className="font-medium">{selectedOrder.promotionCommission.toLocaleString()} د.ع</span>
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            حالة وصول المبلغ: {' '}
+                            <span className="font-medium">
+                              {selectedOrder.promotionAmountReceived === 'full' && 'واصل بالكامل'}
+                              {selectedOrder.promotionAmountReceived === 'partial' && `واصل جزئياً (${selectedOrder.promotionAmountReceivedPercentage}%)`}
+                              {selectedOrder.promotionAmountReceived === 'none' && 'غير واصل'}
+                              {!selectedOrder.promotionAmountReceived && 'غير محدد'}
+                            </span>
+                          </p>
+                        </div>
                       </div>
                     )}
                     

@@ -26,12 +26,26 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     date: new Date(),
     createdAt: new Date(),
     serviceType: '' as 'promotion' | 'design' | 'photography' | 'printing' | 'other' | '',
-    promotionAmount: 0,
+    // خدمة الترويج
+    promotionAmountUSD: 0, // مبلغ الترويج بالدولار
+    promotionAmount: 0, // مبلغ الترويج بالدينار العراقي
+    promotionCurrency: 'usd' as 'iqd' | 'usd',
+    promotionProfit: 0,
+    promotionCommission: 0, // عمولة الترويج
+    promotionAmountReceived: 'none' as 'full' | 'partial' | 'none', // حالة وصول المبلغ
+    promotionAmountReceivedPercentage: '', // نسبة المبلغ الواصل
+    // خدمة التصميم
     designTypes: [] as string[],
+    // خدمة التصوير
     photographyDetails: '',
+    photographyAmount: 0,
+    photographerName: '',
     photographerAmount: 0,
+    // خدمة الطباعة
     printingDetails: '',
-    printingAmount: 0
+    printingAmount: 0,
+    printingEmployeeName: '',
+    printingEmployeeAmount: 0
   });
 
   const [totals, setTotals] = useState({
@@ -48,12 +62,26 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     if (order) {
       setFormData({
         ...order,
-        designTypes: order.designTypes || [],
+        // خدمة الترويج
+        promotionAmountUSD: order.promotionAmountUSD || 0,
         promotionAmount: order.promotionAmount || 0,
+        promotionCurrency: order.promotionCurrency || 'usd',
+        promotionProfit: order.promotionCommission || 0, // العمولة تحسب كربح
+        promotionCommission: order.promotionCommission || 0,
+        promotionAmountReceived: order.promotionAmountReceived || 'none',
+        promotionAmountReceivedPercentage: order.promotionAmountReceivedPercentage || '',
+        // خدمة التصميم
+        designTypes: order.designTypes || [],
+        // خدمة التصوير
         photographyDetails: order.photographyDetails || '',
+        photographyAmount: order.photographyAmount || 0,
+        photographerName: order.photographerName || '',
         photographerAmount: order.photographerAmount || 0,
+        // خدمة الطباعة
         printingDetails: order.printingDetails || '',
-        printingAmount: order.printingAmount || 0
+        printingAmount: order.printingAmount || 0,
+        printingEmployeeName: order.printingEmployeeName || '',
+        printingEmployeeAmount: order.printingEmployeeAmount || 0
       });
     }
   }, [order]);
@@ -122,12 +150,26 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
       // Update the date to reflect when it was modified
       date: new Date(),
       serviceType: formData.serviceType || undefined,
+      // خدمة الترويج
+      promotionAmountUSD: formData.serviceType === 'promotion' ? formData.promotionAmountUSD : undefined,
       promotionAmount: formData.serviceType === 'promotion' ? formData.promotionAmount : undefined,
+      promotionAmountReceived: formData.serviceType === 'promotion' ? formData.promotionAmountReceived : undefined,
+      promotionAmountReceivedPercentage: formData.serviceType === 'promotion' ? formData.promotionAmountReceivedPercentage : undefined,
+      promotionProfit: formData.serviceType === 'promotion' ? formData.promotionCommission : undefined, // العمولة تحسب كربح
+      promotionCurrency: formData.serviceType === 'promotion' ? formData.promotionCurrency : undefined,
+      promotionCommission: formData.serviceType === 'promotion' ? formData.promotionCommission : undefined,
+      // خدمة التصميم
       designTypes: formData.serviceType === 'design' ? formData.designTypes : undefined,
+      // خدمة التصوير
       photographyDetails: formData.serviceType === 'photography' ? formData.photographyDetails : undefined,
+      photographyAmount: formData.serviceType === 'photography' ? formData.photographyAmount : undefined,
+      photographerName: formData.serviceType === 'photography' ? formData.photographerName : undefined,
       photographerAmount: formData.serviceType === 'photography' ? formData.photographerAmount : undefined,
+      // خدمة الطباعة
       printingDetails: formData.serviceType === 'printing' ? formData.printingDetails : undefined,
-      printingAmount: formData.serviceType === 'printing' ? formData.printingAmount : undefined
+      printingAmount: formData.serviceType === 'printing' ? formData.printingAmount : undefined,
+      printingEmployeeName: formData.serviceType === 'printing' ? formData.printingEmployeeName : undefined,
+      printingEmployeeAmount: formData.serviceType === 'printing' ? formData.printingEmployeeAmount : undefined
     };
     
     updateOrder(updatedOrder);
@@ -240,18 +282,104 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
                   <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
                     <Megaphone className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
-                  تفاصيل الترويج
+                  معلومات الترويج
                 </h2>
                 
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      مبلغ الترويج (دينار عراقي)
+                      مبلغ الترويج (دولار أمريكي) *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.promotionAmountUSD}
+                      onChange={(e) => {
+                        const usdAmount = parseFloat(e.target.value) || 0;
+                        const iqdAmount = usdAmount * 1380; // تحويل الدولار إلى دينار عراقي
+                        setFormData(prev => ({
+                          ...prev,
+                          promotionAmountUSD: usdAmount,
+                          promotionAmount: iqdAmount
+                        }));
+                      }}
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                      placeholder="0"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      مبلغ الترويج (دينار عراقي) - محسوب تلقائياً
                     </label>
                     <input
                       type="number"
                       value={formData.promotionAmount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, promotionAmount: parseFloat(e.target.value) || 0 }))}
+                      readOnly
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white transition-all duration-300"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      حالة وصول المبلغ *
+                    </label>
+                    <div className="flex flex-col space-y-2">
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          value="full"
+                          checked={formData.promotionAmountReceived === 'full'}
+                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: '' }))}
+                          className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
+                        />
+                        <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل بالكامل</span>
+                      </label>
+                      
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          value="partial"
+                          checked={formData.promotionAmountReceived === 'partial'}
+                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none' }))}
+                          className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
+                        />
+                        <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل جزئياً</span>
+                      </label>
+                      
+                      {formData.promotionAmountReceived === 'partial' && (
+                        <div className="mr-7 mt-2">
+                          <input
+                            type="number"
+                            value={formData.promotionAmountReceivedPercentage}
+                            onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceivedPercentage: e.target.value }))}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300"
+                            placeholder="نسبة المبلغ الواصل"
+                          />
+                        </div>
+                      )}
+                      
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          value="none"
+                          checked={formData.promotionAmountReceived === 'none'}
+                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: '' }))}
+                          className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
+                        />
+                        <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">غير واصل</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      العمولة (تحسب كربح) *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.promotionCommission}
+                      onChange={(e) => setFormData(prev => ({ ...prev, promotionCommission: parseFloat(e.target.value) || 0 }))}
                       className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
                       placeholder="0"
                     />

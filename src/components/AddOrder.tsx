@@ -19,9 +19,13 @@ export function AddOrder() {
     status: 'pending' as 'pending' | 'in-progress' | 'completed' | 'cancelled',
     serviceType: 'other' as 'promotion' | 'design' | 'photography' | 'printing' | 'other',
     // خدمة الترويج
-    promotionAmount: '',
-    promotionCurrency: 'iqd' as 'iqd' | 'usd',
+    promotionAmountUSD: '', // مبلغ الترويج بالدولار
+    promotionAmount: '', // مبلغ الترويج بالدينار العراقي (يتم حسابه تلقائياً)
+    promotionCurrency: 'usd' as 'iqd' | 'usd', // تغيير القيمة الافتراضية إلى دولار
     promotionProfit: '',
+    promotionCommission: '', // عمولة الترويج
+    promotionAmountReceived: 'none' as 'full' | 'partial' | 'none', // حالة وصول المبلغ
+    promotionAmountReceivedPercentage: '', // نسبة المبلغ الواصل في حالة الوصول الجزئي
     // خدمة التصميم
     designTypes: [] as string[],
     // خدمة التصوير
@@ -109,9 +113,13 @@ export function AddOrder() {
       createdAt: new Date().toISOString(),
       serviceType: formData.serviceType,
       // خدمة الترويج
+      promotionAmountUSD: parseFloat(formData.promotionAmountUSD) || 0,
       promotionAmount: parseFloat(formData.promotionAmount) || 0,
       promotionCurrency: formData.promotionCurrency,
-      promotionProfit: parseFloat(formData.promotionProfit) || 0,
+      promotionProfit: parseFloat(formData.promotionCommission) || 0, // الربح يساوي العمولة
+      promotionCommission: parseFloat(formData.promotionCommission) || 0,
+      promotionAmountReceived: formData.promotionAmountReceived,
+      promotionAmountReceivedPercentage: formData.promotionAmountReceived === 'partial' ? parseFloat(formData.promotionAmountReceivedPercentage) || 0 : 0,
       // خدمة التصميم
       designTypes: formData.designTypes,
       // خدمة التصوير
@@ -143,9 +151,13 @@ export function AddOrder() {
       status: 'pending',
       serviceType: 'other',
       // خدمة الترويج
+      promotionAmountUSD: '',
       promotionAmount: '',
-      promotionCurrency: 'iqd',
+      promotionCurrency: 'usd',
       promotionProfit: '',
+      promotionCommission: '',
+      promotionAmountReceived: 'none',
+      promotionAmountReceivedPercentage: '',
       // خدمة التصميم
       designTypes: [],
       // خدمة التصوير
@@ -254,18 +266,26 @@ export function AddOrder() {
                 <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
                   <Megaphone className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
-                تفاصيل خدمة الترويج
+                معلومات الترويج
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    مبلغ الترويج *
+                    مبلغ الترويج بالدولار *
                   </label>
                   <input
                     type="number"
-                    value={formData.promotionAmount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, promotionAmount: e.target.value }))}
+                    value={formData.promotionAmountUSD}
+                    onChange={(e) => {
+                      const usdAmount = e.target.value;
+                      const iqdAmount = parseFloat(usdAmount) * 1380 || '';
+                      setFormData(prev => ({
+                        ...prev,
+                        promotionAmountUSD: usdAmount,
+                        promotionAmount: iqdAmount.toString()
+                      }));
+                    }}
                     className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
                     placeholder="0"
                   />
@@ -273,23 +293,86 @@ export function AddOrder() {
                 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    العملة
+                    مبلغ الترويج بالدينار العراقي (تلقائي)
                   </label>
-                  <div className="flex gap-4">
-                    <div 
-                      onClick={() => setFormData(prev => ({ ...prev, promotionCurrency: 'iqd' }))}
-                      className={`flex-1 p-3 rounded-xl border cursor-pointer transition-all duration-300 flex items-center justify-center ${formData.promotionCurrency === 'iqd' ? 'bg-primary-50 border-primary-500 shadow-md dark:bg-primary-900/30 dark:border-primary-500' : 'bg-white border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700'}`}
-                    >
-                      <span className={`font-medium ${formData.promotionCurrency === 'iqd' ? 'text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'}`}>دينار عراقي</span>
-                    </div>
+                  <input
+                    type="text"
+                    value={formData.promotionAmount ? parseFloat(formData.promotionAmount).toLocaleString('ar-IQ') : ''}
+                    readOnly
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white transition-all duration-300"
+                    placeholder="يتم الحساب تلقائياً"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    العمولة (تحسب كربح) *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.promotionCommission}
+                    onChange={(e) => setFormData(prev => ({ ...prev, promotionCommission: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    حالة وصول المبلغ *
+                  </label>
+                  <div className="flex flex-col space-y-2">
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        value="full"
+                        checked={formData.promotionAmountReceived === 'full'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: '' }))}
+                        className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
+                      />
+                      <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل بالكامل</span>
+                    </label>
                     
-                    <div 
-                      onClick={() => setFormData(prev => ({ ...prev, promotionCurrency: 'usd' }))}
-                      className={`flex-1 p-3 rounded-xl border cursor-pointer transition-all duration-300 flex items-center justify-center ${formData.promotionCurrency === 'usd' ? 'bg-primary-50 border-primary-500 shadow-md dark:bg-primary-900/30 dark:border-primary-500' : 'bg-white border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700'}`}
-                    >
-                      <span className={`font-medium ${formData.promotionCurrency === 'usd' ? 'text-primary-700 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'}`}>دولار أمريكي</span>
-                    </div>
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        value="partial"
+                        checked={formData.promotionAmountReceived === 'partial'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none' }))}
+                        className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
+                      />
+                      <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل جزئياً</span>
+                    </label>
+                    
+                    {formData.promotionAmountReceived === 'partial' && (
+                      <div className="mr-7 mt-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={formData.promotionAmountReceivedPercentage}
+                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceivedPercentage: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300"
+                          placeholder="نسبة المبلغ الواصل"
+                        />
+                      </div>
+                    )}
+                    
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        value="none"
+                        checked={formData.promotionAmountReceived === 'none'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: '' }))}
+                        className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
+                      />
+                      <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">غير واصل</span>
+                    </label>
                   </div>
+                </div>
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    placeholder="0"
+                  />
                 </div>
                 
                 <div>

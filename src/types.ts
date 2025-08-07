@@ -17,9 +17,13 @@ export interface Order {
   // نوع الخدمة
   serviceType?: 'promotion' | 'design' | 'photography' | 'printing' | 'other';
   // خدمة الترويج
-  promotionAmount?: number;
+  promotionAmountUSD?: number; // مبلغ الترويج بالدولار
+  promotionAmount?: number; // مبلغ الترويج بالدينار العراقي (يتم حسابه تلقائياً)
   promotionCurrency?: 'iqd' | 'usd';
   promotionProfit?: number;
+  promotionCommission?: number; // عمولة الترويج
+  promotionAmountReceived?: 'full' | 'partial' | 'none'; // حالة وصول المبلغ
+  promotionAmountReceivedPercentage?: number; // نسبة المبلغ الواصل في حالة الوصول الجزئي
   // خدمة التصميم
   designTypes?: string[];
   // خدمة التصوير
