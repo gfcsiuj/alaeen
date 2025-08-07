@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Star, Plus, X, AlertCircle, Megaphone, Palette, Camera, Printer, DollarSign } from 'lucide-react';
+import { Star, Plus, X, AlertCircle, Megaphone, Palette, Camera, Printer, DollarSign, Users } from 'lucide-react';
 import { Order } from '../types';
 
 interface EditOrderProps {
