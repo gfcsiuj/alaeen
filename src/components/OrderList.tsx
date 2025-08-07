@@ -88,7 +88,7 @@ export default function OrderList() {
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full border-4 border-primary bg-white dark:bg-gray-800 flex items-center justify-center shadow-lg">
             <img 
-              src="https://scontent.fosm4-2.fna.fbcdn.net/v/t39.30808-6/494646003_122103077492854376_4740803221172287157_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=8gnYz32ttRoQ7kNvwHVFH6B&_nc_oc=Adlg9De_-JOZZATh6rHCiNM4TwI6Qe55Da8iTvwoUW7AfUO98piKDr3i-3yy39pfSQA&_nc_pt=1&_nc_zt=23&_nc_ht=scontent.fosm4-2.fna&_nc_gid=m02mrNFC3RUiJRkPKNka1A&oh=00_AfWT_QZAIBnHVdxqpRk_ZI0KGj4cNRb9LjGtpmCkFag2PQ&oe=6897D9BA"
+              src="/logo.png"
               alt="العين" 
               className="w-8 h-8 rounded-full object-cover"
             />
@@ -296,7 +296,7 @@ export default function OrderList() {
                     {selectedOrder.serviceType === 'design' && selectedOrder.designTypes && (
                       <div className="mt-2">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          أنواع التصميم: <span className="font-medium">{selectedOrder.designTypes}</span>
+                          أنواع التصميم: <span className="font-medium">{Array.isArray(selectedOrder.designTypes) ? selectedOrder.designTypes.join(', ') : selectedOrder.designTypes}</span>
                         </p>
                       </div>
                     )}
