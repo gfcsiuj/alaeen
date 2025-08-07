@@ -49,6 +49,39 @@ html {
   animation: fadeIn 0.5s ease-in-out;
 }
 
+.animate-bounce-in {
+  animation: bounceIn 1s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-progress {
+  animation: progress 2.5s ease-in-out;
+}
+
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
 }

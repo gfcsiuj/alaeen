@@ -6,10 +6,12 @@ import OrderList from './components/OrderList';
 import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
 import { PinLogin } from './components/PinLogin';
+import { Loader } from './components/Loader';
 
 function AppContent() {
   const { settings, isAuthenticated } = useApp();
   const [activeTab, setActiveTab] = useState('analytics');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Apply theme on mount and when it changes
@@ -20,6 +22,20 @@ function AppContent() {
     }
   }, [settings.theme]);
 
+  useEffect(() => {
+    // إظهار شاشة التحميل لمدة محددة
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2500); // 2.5 ثانية
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // عرض شاشة التحميل أولاً
+  if (loading) {
+    return <Loader />;
+  }
+  
   // Show PIN login if PIN is enabled and user is not authenticated
   if (settings.pinEnabled && !isAuthenticated) {
     return <PinLogin />;

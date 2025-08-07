@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingUp, Users, DollarSign, Calendar, Filter, PieChart, BarChart3, Target } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 
@@ -6,24 +6,31 @@ export function Analytics() {
   const { orders } = useApp();
   const [timeFilter, setTimeFilter] = useState('all');
   const [customDays, setCustomDays] = useState('7');
+  const [filteredOrders, setFilteredOrders] = useState(orders);
 
-  const analyticsData = useMemo(() => {
-    let filteredOrders = orders;
+  // تحديث الطلبات المفلترة عند تغيير الفلتر الزمني
+  useEffect(() => {
+    let filtered = orders;
     const now = new Date();
 
     if (timeFilter === 'today') {
       const today = now.toDateString();
-      filteredOrders = orders.filter(order => new Date(order.date).toDateString() === today);
+      filtered = orders.filter(order => new Date(order.date).toDateString() === today);
     } else if (timeFilter === 'week') {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filteredOrders = orders.filter(order => new Date(order.date) >= weekAgo);
+      filtered = orders.filter(order => new Date(order.date) >= weekAgo);
     } else if (timeFilter === 'month') {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      filteredOrders = orders.filter(order => new Date(order.date) >= monthAgo);
+      filtered = orders.filter(order => new Date(order.date) >= monthAgo);
     } else if (timeFilter === 'custom') {
       const daysAgo = new Date(now.getTime() - parseInt(customDays) * 24 * 60 * 60 * 1000);
-      filteredOrders = orders.filter(order => new Date(order.date) >= daysAgo);
+      filtered = orders.filter(order => new Date(order.date) >= daysAgo);
     }
+    
+    setFilteredOrders(filtered);
+  }, [orders, timeFilter, customDays]);
+
+  const analyticsData = useMemo(() => {
 
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.price, 0);
     
@@ -72,7 +79,7 @@ export function Analytics() {
       averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
       profitMargin: totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
     };
-  }, [orders, timeFilter, customDays]);
+  }, [filteredOrders]);
 
   const getFilterLabel = () => {
     switch (timeFilter) {
@@ -325,20 +332,21 @@ export function Analytics() {
                           <button 
                             className="px-3 py-1 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 text-sm"
                             onClick={() => {
-                              // تصفية الطلبات التي يعمل فيها هذا العامل
-                              const workerOrders = filteredOrders.filter(order => 
-                                order.workers.some(w => w.name === worker)
-                              );
-                              
-                              // إنشاء عنصر div للنافذة المنبثقة
-                              const modalDiv = document.createElement('div');
-                              modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                              
-                              // حساب عدد الأعمال
-                              const orderCount = workerOrders.length;
-                              
-                              // حساب عدد العملاء الفريدين
-                              const uniqueCustomers = new Set(workerOrders.map(order => order.customerName)).size;
+                              try {
+                                // تصفية الطلبات التي يعمل فيها هذا العامل
+                                const workerOrders = filteredOrders.filter(order => 
+                                  order.workers && order.workers.some(w => w.name === worker)
+                                );
+                                
+                                // إنشاء عنصر div للنافذة المنبثقة
+                                const modalDiv = document.createElement('div');
+                                modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                                
+                                // حساب عدد الأعمال
+                                const orderCount = workerOrders.length;
+                                
+                                // حساب عدد العملاء الفريدين
+                                const uniqueCustomers = new Set(workerOrders.map(order => order.customerName)).size;
                               
                               // إنشاء محتوى تفاصيل الأعمال
                               let orderDetailsHTML = '';
@@ -420,7 +428,11 @@ export function Analytics() {
                                   document.body.removeChild(modalDiv);
                                 }
                               });
-                            }}
+                            } catch (error) {
+                              console.error('حدث خطأ في عرض تفاصيل العمال:', error);
+                              alert('حدث خطأ في عرض تفاصيل العمال. يرجى المحاولة مرة أخرى.');
+                            }
+                          }}
                           >
                             تفاصيل العمل
                           </button>
