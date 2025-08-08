@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Star, Plus, X, AlertCircle, Megaphone, Palette, Camera, Printer, DollarSign, Users } from 'lucide-react';
+import { Star, Plus, X, AlertCircle, Megaphone, Palette, Camera, Printer, DollarSign, Users, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Order } from '../types';
 
 interface EditOrderProps {
@@ -9,7 +9,8 @@ interface EditOrderProps {
 }
 
 export default function EditOrder({ order, onClose }: EditOrderProps) {
-  const { updateOrder } = useApp();
+  const { updateOrder, isOnline, isSyncing } = useApp();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Add a close button handler with confirmation
   const handleClose = () => {
@@ -46,6 +47,48 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     console.log('- التاريخ:', formData.date, typeof formData.date);
     console.log('- تاريخ الإنشاء:', formData.createdAt, typeof formData.createdAt);
     console.groupEnd();
+  };
+  
+  // دالة لإعادة تعيين النموذج إلى القيم الأصلية للطلب
+  const resetForm = () => {
+    setFormData({
+      id: order.id,
+      customerName: order.customerName,
+      orderDetails: order.orderDetails,
+      price: order.price.toString(),
+      quantity: order.quantity.toString(),
+      workers: [...order.workers],
+      discount: order.discount ? order.discount.toString() : '',
+      discountType: order.discountType || 'fixed',
+      tax: order.tax ? order.tax.toString() : '',
+      notes: order.notes || '',
+      priority: order.priority || 'medium',
+      status: order.status || 'pending',
+      serviceType: order.serviceType || 'other',
+      date: order.date,
+      createdAt: order.createdAt,
+      // خدمة الترويج
+      promotionAmountUSD: order.promotionAmountUSD ? order.promotionAmountUSD.toString() : '',
+      promotionAmount: order.promotionAmount ? order.promotionAmount.toString() : '',
+      promotionCurrency: order.promotionCurrency || 'usd',
+      promotionProfit: order.promotionProfit ? order.promotionProfit.toString() : '',
+      promotionCommission: order.promotionCommission ? order.promotionCommission.toString() : '',
+      promotionAmountReceived: order.promotionAmountReceived || 'none',
+      promotionAmountReceivedPercentage: order.promotionAmountReceivedPercentage ? order.promotionAmountReceivedPercentage.toString() : '',
+      // خدمة التصميم
+      designTypes: order.designTypes || [],
+      // خدمة التصوير
+      photographyDetails: order.photographyDetails || '',
+      photographyAmount: order.photographyAmount ? order.photographyAmount.toString() : '',
+      photographerName: order.photographerName || '',
+      photographerAmount: order.photographerAmount ? order.photographerAmount.toString() : '',
+      // خدمة الطباعة
+      printingDetails: order.printingDetails || '',
+      printingAmount: order.printingAmount ? order.printingAmount.toString() : '',
+      printingEmployeeName: order.printingEmployeeName || '',
+      printingEmployeeAmount: order.printingEmployeeAmount ? order.printingEmployeeAmount.toString() : '',
+    });
+  };
     
     alert('تم عرض معلومات التصحيح في وحدة تحكم المتصفح (F12)');
   };
@@ -197,6 +240,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
         
         console.log('Setting form data:', completeFormData);
         setFormData(completeFormData);
+        // يمكن استخدام resetForm() هنا، ولكن نحن نقوم بتعيين البيانات مباشرة في هذه المرحلة
       } catch (error) {
         console.error('Error initializing form data:', error);
         let errorMessage = 'حدث خطأ أثناء تحميل بيانات الطلب: ';
@@ -269,6 +313,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     console.log('Form submission started');
     console.log('Current formData:', formData);
@@ -412,7 +457,10 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
       console.log('Order updated successfully');
       
       // عرض رسالة نجاح للمستخدم
-      alert('تم تحديث الطلب بنجاح!');
+      alert('تم تحديث الطلب بنجاح!' + (isOnline ? ' وتمت مزامنته مع جميع المستخدمين' : ' محلياً فقط (أنت غير متصل بالإنترنت)'));
+      
+      // إعادة تعيين النموذج إلى القيم المحدثة
+      resetForm();
       
       // إغلاق النافذة
       onClose();
@@ -430,6 +478,8 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
       }
       
       alert(errorMessage + '\n\nيرجى التحقق من البيانات والمحاولة مرة أخرى. إذا استمرت المشكلة، حاول إعادة تحميل الصفحة.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1084,11 +1134,33 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
               />
             </div>
 
+            {/* حالة الاتصال والمزامنة */}
+            <div className="flex items-center justify-center gap-4 mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                {isOnline ? (
+                  <Wifi className="w-5 h-5 text-green-500 ml-2" />
+                ) : (
+                  <WifiOff className="w-5 h-5 text-red-500 ml-2" />
+                )}
+                <span className={`text-sm font-medium ${isOnline ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {isOnline ? 'متصل بالإنترنت' : 'غير متصل بالإنترنت'}
+                </span>
+              </div>
+              
+              {isSyncing && (
+                <div className="flex items-center">
+                  <Loader2 className="w-5 h-5 text-blue-500 ml-2 animate-spin" />
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">جاري المزامنة...</span>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-4 mt-8">
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-1/3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                disabled={isSubmitting}
+                className={`w-1/3 ${isSubmitting ? 'bg-gray-300 dark:bg-gray-800 cursor-not-allowed' : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600'} text-gray-800 dark:text-gray-200 py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300`}
               >
                 <div className="flex items-center justify-center">
                   <X className="w-5 h-5 ml-2" />
@@ -1098,11 +1170,21 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
               
               <button
                 type="submit"
-                className="w-2/3 bg-gradient-to-r from-primary-500 to-pink-500 hover:from-primary-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                disabled={isSubmitting}
+                className={`w-2/3 ${isSubmitting ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-primary-500 to-pink-500 hover:from-primary-600 hover:to-pink-600'} text-white py-4 px-6 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105`}
               >
                 <div className="flex items-center justify-center">
-                  <Star className="w-5 h-5 ml-2" />
-                  حفظ التعديلات
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                      جاري الحفظ...
+                    </>
+                  ) : (
+                    <>
+                      <Star className="w-5 h-5 ml-2" />
+                      حفظ التعديلات
+                    </>
+                  )}
                 </div>
               </button>
             </div>

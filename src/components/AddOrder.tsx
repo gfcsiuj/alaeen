@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, X, Users, Percent, Calculator, AlertCircle, Star, Camera, Printer, Megaphone, Palette } from 'lucide-react';
+import { Plus, X, Users, Percent, Calculator, AlertCircle, Star, Camera, Printer, Megaphone, Palette, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { Order } from '../types';
 
 export function AddOrder() {
-  const { orders, setOrders } = useApp();
+  const { orders, setOrders, isOnline, isSyncing } = useApp();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     customerName: '',
     orderDetails: '',
@@ -99,10 +100,48 @@ export function AddOrder() {
     };
   };
 
+  const resetForm = () => {
+    setFormData({
+      customerName: '',
+      orderDetails: '',
+      price: '',
+      quantity: '1',
+      workers: [{ name: '', share: 0, workType: '' }],
+      discount: '',
+      discountType: 'fixed',
+      tax: '',
+      notes: '',
+      priority: 'medium',
+      status: 'pending',
+      serviceType: 'other',
+      // خدمة الترويج
+      promotionAmountUSD: '',
+      promotionAmount: '',
+      promotionCurrency: 'usd',
+      promotionProfit: '',
+      promotionCommission: '',
+      promotionAmountReceived: 'none',
+      promotionAmountReceivedPercentage: '',
+      // خدمة التصميم
+      designTypes: [],
+      // خدمة التصوير
+      photographyDetails: '',
+      photographyAmount: '',
+      photographerName: '',
+      photographerAmount: '',
+      // خدمة الطباعة
+      printingDetails: '',
+      printingAmount: '',
+      printingEmployeeName: '',
+      printingEmployeeAmount: '',
+    });
+  };
+
   const totals = calculateTotals();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     const newOrder: Order = {
       id: Date.now().toString(),
@@ -142,43 +181,20 @@ export function AddOrder() {
       printingEmployeeAmount: parseFloat(formData.printingEmployeeAmount) || 0,
     };
 
-    setOrders(prev => [newOrder, ...prev]);
-    
-    // Reset form
-    setFormData({
-      customerName: '',
-      orderDetails: '',
-      price: '',
-      quantity: '1',
-      workers: [{ name: '', share: 0, workType: '' }],
-      discount: '',
-      discountType: 'fixed',
-      tax: '',
-      notes: '',
-      priority: 'medium',
-      status: 'pending',
-      serviceType: 'other',
-      // خدمة الترويج
-      promotionAmountUSD: '',
-      promotionAmount: '',
-      promotionCurrency: 'usd',
-      promotionProfit: '',
-      promotionCommission: '',
-      promotionAmountReceived: 'none',
-      promotionAmountReceivedPercentage: '',
-      // خدمة التصميم
-      designTypes: [],
-      // خدمة التصوير
-      photographyDetails: '',
-      photographyAmount: '',
-      photographerName: '',
-      photographerAmount: '',
-      // خدمة الطباعة
-      printingDetails: '',
-      printingAmount: '',
-      printingEmployeeName: '',
-      printingEmployeeAmount: '',
-    });
+    try {
+      setOrders(prev => [newOrder, ...prev]);
+      
+      // عرض رسالة نجاح
+      alert('تم إضافة الطلب بنجاح' + (isOnline ? ' وتمت مزامنته مع جميع المستخدمين' : ' محلياً فقط (أنت غير متصل بالإنترنت)'));
+      
+      // إعادة تعيين النموذج
+      resetForm();
+    } catch (error) {
+      console.error('خطأ في إضافة الطلب:', error);
+      alert('حدث خطأ أثناء إضافة الطلب. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -677,11 +693,39 @@ export function AddOrder() {
             />
           </div>
 
+          {/* حالة الاتصال والمزامنة */}
+          <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {isOnline ? (
+                  <Wifi className="w-5 h-5 text-green-500 ml-2" />
+                ) : (
+                  <WifiOff className="w-5 h-5 text-red-500 ml-2" />
+                )}
+                <span className="text-sm font-medium">
+                  {isOnline ? 'متصل بالإنترنت' : 'غير متصل بالإنترنت'}
+                </span>
+              </div>
+              <div className="flex items-center">
+                {isSyncing && (
+                  <>
+                    <Loader2 className="w-4 h-4 text-blue-500 ml-2 animate-spin" />
+                    <span className="text-sm text-blue-500">جاري المزامنة...</span>
+                  </>
+                )}
+                {isOnline && !isSyncing && (
+                  <span className="text-sm text-green-500">متزامن مع جميع المستخدمين</span>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-4 mt-8">
             <button
               type="button"
               onClick={() => resetForm()}
               className="w-1/3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              disabled={isSubmitting}
             >
               <div className="flex items-center justify-center">
                 <X className="w-5 h-5 ml-2" />
@@ -691,11 +735,21 @@ export function AddOrder() {
             
             <button
               type="submit"
-              className="w-2/3 bg-gradient-to-r from-primary-500 to-pink-500 hover:from-primary-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+              className="w-2/3 bg-gradient-to-r from-primary-500 to-pink-500 hover:from-primary-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:transform-none disabled:shadow-none"
+              disabled={isSubmitting}
             >
               <div className="flex items-center justify-center">
-                <Star className="w-5 h-5 ml-2" />
-                حفظ الطلب
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  <>
+                    <Star className="w-5 h-5 ml-2" />
+                    حفظ الطلب
+                  </>
+                )}
               </div>
             </button>
           </div>

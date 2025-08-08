@@ -1,6 +1,7 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Order, Settings } from '../types';
+import { subscribeToOrders, saveOrder, deleteOrderFromDB, updateOrderInDB } from '../firebase/orderService';
 
 interface AppContextType {
   orders: Order[];
@@ -11,20 +12,82 @@ interface AppContextType {
   setIsAuthenticated: (authenticated: boolean) => void;
   deleteOrder: (id: string) => void;
   updateOrder: (updatedOrder: Order) => void;
+  isOnline: boolean; // حالة الاتصال بالإنترنت
+  isSyncing: boolean; // حالة المزامنة مع Firebase
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useLocalStorage<Order[]>('al-ain-orders', []);
+  const [orders, setLocalOrders] = useLocalStorage<Order[]>('al-ain-orders', []);
   const [settings, setSettings] = useLocalStorage<Settings>('al-ain-settings', {
     theme: 'light',
     pinEnabled: false,
   });
   const [isAuthenticated, setIsAuthenticated] = useLocalStorage<boolean>('al-ain-auth', true);
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = React.useState(false);
+
+  // تتبع حالة الاتصال بالإنترنت
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // الاشتراك في التغييرات من Firebase
+  useEffect(() => {
+    if (isOnline) {
+      setIsSyncing(true);
+      const unsubscribe = subscribeToOrders((firebaseOrders) => {
+        console.log('تم استلام تحديث من Firebase:', firebaseOrders);
+        setLocalOrders(firebaseOrders);
+        setIsSyncing(false);
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [isOnline]);
+
+  // دالة لتحديث الطلبات محلياً وفي Firebase
+  const setOrders = (ordersOrUpdater: Order[] | ((prevOrders: Order[]) => Order[])) => {
+    // تحديث محلي أولاً
+    setLocalOrders(ordersOrUpdater);
+    
+    // ثم مزامنة مع Firebase إذا كان متصلاً بالإنترنت
+    if (isOnline) {
+      const updatedOrders = typeof ordersOrUpdater === 'function' 
+        ? ordersOrUpdater(orders)
+        : ordersOrUpdater;
+        
+      // مزامنة كل طلب مع Firebase
+      updatedOrders.forEach(order => {
+        saveOrder(order).catch(error => {
+          console.error('فشل في مزامنة الطلب مع Firebase:', error);
+        });
+      });
+    }
+  };
 
   const deleteOrder = (id: string) => {
-    setOrders(prev => prev.filter(order => order.id !== id));
+    // حذف محلي
+    setLocalOrders(prev => prev.filter(order => order.id !== id));
+    
+    // حذف من Firebase إذا كان متصلاً بالإنترنت
+    if (isOnline) {
+      deleteOrderFromDB(id).catch(error => {
+        console.error('فشل في حذف الطلب من Firebase:', error);
+      });
+    }
   };
 
   const updateOrder = (updatedOrder: Order) => {
@@ -59,14 +122,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const originalOrder = orders.find(order => order.id === updatedOrder.id);
       console.log('AppContext: Original order:', originalOrder);
       
-      // تحديث الطلب
-      setOrders(prev => {
+      // تحديث الطلب محلياً
+      setLocalOrders(prev => {
         const newOrders = prev.map(order => 
           order.id === updatedOrder.id ? updatedOrder : order
         );
-        console.log('AppContext: Updated orders:', newOrders);
+        console.log('AppContext: Updated orders locally:', newOrders);
         return newOrders;
       });
+      
+      // تحديث الطلب في Firebase إذا كان متصلاً بالإنترنت
+      if (isOnline) {
+        saveOrder(updatedOrder).then(() => {
+          console.log('AppContext: Order updated successfully in Firebase');
+        }).catch(error => {
+          console.error('AppContext: Error updating order in Firebase:', error);
+        });
+      }
       
       console.log('AppContext: Order updated successfully');
     } catch (error) {
@@ -86,6 +158,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated,
         deleteOrder,
         updateOrder,
+        isOnline,
+        isSyncing,
       }}
     >
       {children}
