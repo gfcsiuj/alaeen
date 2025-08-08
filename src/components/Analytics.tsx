@@ -147,10 +147,84 @@ export function Analytics() {
       }
     } else if (paymentAction.partner) {
       // تسجيل دفع للشريك
-      const { type, partner, partnerShare } = paymentAction;
+      const { type, partner, partnerShare, amount } = paymentAction;
       
-      // تنفيذ الإجراء المناسب بناءً على نوع العملية
-      // (يمكن إضافة التنفيذ المشابه للعمال هنا)
+      if (type === 'full') {
+        // تسجيل دفع كامل للشريك
+        successDiv = document.createElement('div');
+        successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        successDiv.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+            <div class="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع بنجاح</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل دفع كامل المبلغ (${partnerShare?.toLocaleString('ar-IQ')} د.ع) للشريك ${partner}</p>
+            <button id="success-close-partner" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-bold">
+              حسناً
+            </button>
+          </div>
+        `;
+        
+        document.body.appendChild(successDiv);
+        
+        // تحديث حالة الدفع في DOM
+        const partnerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+        partnerCards.forEach(card => {
+          const nameElement = card.querySelector('h3.text-lg.font-bold');
+          if (nameElement && nameElement.textContent?.includes(partner)) {
+            const statusElement = card.querySelector('span.text-red-500, span.text-blue-500, span.text-green-500');
+            if (statusElement) {
+              statusElement.className = 'text-green-500 mr-2 font-bold';
+              statusElement.textContent = '(تم الدفع)';
+            }
+          }
+        });
+        
+        document.getElementById('success-close-partner')?.addEventListener('click', () => {
+          document.body.removeChild(successDiv);
+        });
+      } else if (type === 'partial' && amount) {
+        // تسجيل دفع جزئي للشريك
+        successDiv = document.createElement('div');
+        successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        successDiv.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+            <div class="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع الجزئي بنجاح</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-2">تم تسجيل دفع مبلغ (${amount.toLocaleString('ar-IQ')} د.ع) للشريك ${partner}</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">المبلغ المتبقي: ${(partnerShare! - amount).toLocaleString('ar-IQ')} د.ع</p>
+            <button id="success-close-partner" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
+              حسناً
+            </button>
+          </div>
+        `;
+        
+        document.body.appendChild(successDiv);
+        
+        // تحديث حالة الدفع الجزئي في DOM
+        const partnerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+        partnerCards.forEach(card => {
+          const nameElement = card.querySelector('h3.text-lg.font-bold');
+          if (nameElement && nameElement.textContent?.includes(partner)) {
+            const statusElement = card.querySelector('span.text-red-500, span.text-blue-500, span.text-green-500');
+            if (statusElement) {
+              statusElement.className = 'text-blue-500 mr-2 font-bold';
+              statusElement.textContent = '(تم دفع مبلغ جزئي)';
+            }
+          }
+        });
+        
+        document.getElementById('success-close-partner')?.addEventListener('click', () => {
+          document.body.removeChild(successDiv);
+        });
+      }
     }
     
     // إعادة تعيين حالة الإجراء
@@ -919,42 +993,18 @@ export function Analytics() {
                   
                   // إضافة مستمعي الأحداث للأزرار
                   document.getElementById('pay-full-partner1')?.addEventListener('click', () => {
-                    // إظهار رسالة نجاح
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                    successDiv.innerHTML = `
-                      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                        <div class="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع بنجاح</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل دفع كامل المبلغ (${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع) للشريك عبدالله</p>
-                        <button id="success-close-partner1" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-bold">
-                          حسناً
-                        </button>
-                      </div>
-                    `;
-                    
+                    // إزالة النافذة المنبثقة
                     document.body.removeChild(modalDiv);
-                    document.body.appendChild(successDiv);
                     
-                    // تصفير المبلغ المستحق للشريك
-                    const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                    partnerCards.forEach(card => {
-                      const nameElement = card.querySelector('h4.text-lg.font-bold');
-                      if (nameElement && nameElement.textContent === 'عبدالله') {
-                        const amountElement = card.querySelector('p.text-2xl.font-bold');
-                        if (amountElement) {
-                          amountElement.innerHTML = `0 د.ع <span class="text-green-500 text-sm mr-2 font-bold">(تم الدفع)</span>`;
-                        }
-                      }
+                    // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                    setPaymentAction({
+                      type: 'full',
+                      partner: 'عبدالله',
+                      partnerShare: analyticsData.netProfit / 3
                     });
+                    setShowPasswordConfirm(true);
                     
-                    document.getElementById('success-close-partner1')?.addEventListener('click', () => {
-                      document.body.removeChild(successDiv);
-                    });
+                  });
                   });
                   
                   // إضافة وظيفة الدفع الجزئي للشريك
@@ -996,42 +1046,17 @@ export function Analytics() {
                         return;
                       }
                       
-                      // إظهار رسالة نجاح
-                      const successDiv = document.createElement('div');
-                      successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                      successDiv.innerHTML = `
-                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                          <div class="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          </div>
-                          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع الجزئي بنجاح</h3>
-                          <p class="text-gray-600 dark:text-gray-400 mb-2">تم تسجيل دفع مبلغ (${amount.toLocaleString('ar-IQ')} د.ع) للشريك عبدالله</p>
-                          <p class="text-gray-600 dark:text-gray-400 mb-6">المبلغ المتبقي: ${(partnerShare - amount).toLocaleString('ar-IQ')} د.ع</p>
-                          <button id="success-close-partial-partner1" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
-                            حسناً
-                          </button>
-                        </div>
-                      `;
-                      
+                      // إزالة النافذة المنبثقة
                       document.body.removeChild(amountDiv);
-                      document.body.appendChild(successDiv);
                       
-                      // تحديث حالة الدفع الجزئي في DOM
-                      const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                      partnerCards.forEach(card => {
-                        const nameElement = card.querySelector('h4.text-lg.font-bold');
-                        if (nameElement && nameElement.textContent === 'عبدالله') {
-                          const amountElement = card.querySelector('p.text-2xl.font-bold');
-                          if (amountElement) {
-                            amountElement.innerHTML = `${(partnerShare - amount).toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 text-sm mr-2 font-bold">(تم دفع مبلغ جزئي)</span>`;
-                          }
-                        }
+                      // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                      setPaymentAction({
+                        type: 'partial',
+                        partner: 'عبدالله',
+                        partnerShare,
+                        amount
                       });
-                      
-                      document.getElementById('success-close-partial-partner1')?.addEventListener('click', () => {
-                        document.body.removeChild(successDiv);
+                      setShowPasswordConfirm(true);
                       });
                     });
                     
@@ -1157,41 +1182,18 @@ export function Analytics() {
                   document.body.appendChild(modalDiv);
                   
                   document.getElementById('pay-full-partner2')?.addEventListener('click', () => {
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                    successDiv.innerHTML = `
-                      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                        <div class="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع بنجاح</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل دفع كامل المبلغ (${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع) للشريك عياش</p>
-                        <button id="success-close-partner2" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-bold">
-                          حسناً
-                        </button>
-                      </div>
-                    `;
-                    
+                    // إزالة النافذة المنبثقة
                     document.body.removeChild(modalDiv);
-                    document.body.appendChild(successDiv);
                     
-                    // تحديث حالة الدفع الكامل في DOM
-                    const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                    partnerCards.forEach(card => {
-                      const nameElement = card.querySelector('h4.text-lg.font-bold');
-                      if (nameElement && nameElement.textContent === 'عياش') {
-                        const amountElement = card.querySelector('p.text-2xl.font-bold');
-                        if (amountElement) {
-                          amountElement.innerHTML = `0 د.ع <span class="text-green-500 text-sm mr-2 font-bold">(تم الدفع)</span>`;
-                        }
-                      }
+                    // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                    setPaymentAction({
+                      type: 'full',
+                      partner: 'عياش',
+                      partnerShare: analyticsData.netProfit / 3
                     });
+                    setShowPasswordConfirm(true);
                     
-                    document.getElementById('success-close-partner2')?.addEventListener('click', () => {
-                      document.body.removeChild(successDiv);
-                    });
+                  });
                   });
                   
                   // إضافة وظيفة الدفع الجزئي للشريك
@@ -1233,43 +1235,20 @@ export function Analytics() {
                         return;
                       }
                       
-                      // إظهار رسالة نجاح
-                      const successDiv = document.createElement('div');
-                      successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                      successDiv.innerHTML = `
-                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                          <div class="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          </div>
-                          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع الجزئي بنجاح</h3>
-                          <p class="text-gray-600 dark:text-gray-400 mb-2">تم تسجيل دفع مبلغ (${amount.toLocaleString('ar-IQ')} د.ع) للشريك عياش</p>
-                          <p class="text-gray-600 dark:text-gray-400 mb-6">المبلغ المتبقي: ${(partnerShare - amount).toLocaleString('ar-IQ')} د.ع</p>
-                          <button id="success-close-partial-partner2" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
-                            حسناً
-                          </button>
-                        </div>
-                      `;
-                      
+                      // إزالة النافذة المنبثقة
                       document.body.removeChild(amountDiv);
-                      document.body.appendChild(successDiv);
                       
-                      // تحديث حالة الدفع الجزئي في DOM
-                      const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                      partnerCards.forEach(card => {
-                        const nameElement = card.querySelector('h4.text-lg.font-bold');
-                        if (nameElement && nameElement.textContent === 'عياش') {
-                          const amountElement = card.querySelector('p.text-2xl.font-bold');
-                          if (amountElement) {
-                            amountElement.innerHTML = `${(partnerShare - amount).toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 text-sm mr-2 font-bold">(تم دفع مبلغ جزئي)</span>`;
-                          }
-                        }
+                      // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                      setPaymentAction({
+                        type: 'partial',
+                        partner: 'عياش',
+                        partnerShare,
+                        amount
                       });
+                      setShowPasswordConfirm(true);
+                    });
                       
-                      document.getElementById('success-close-partial-partner2')?.addEventListener('click', () => {
-                        document.body.removeChild(successDiv);
-                      });
+
                     });
                     
                     document.getElementById('cancel-partial-partner2')?.addEventListener('click', () => {
@@ -1394,41 +1373,15 @@ export function Analytics() {
                   document.body.appendChild(modalDiv);
                   
                   document.getElementById('pay-full-partner3')?.addEventListener('click', () => {
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                    successDiv.innerHTML = `
-                      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                        <div class="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع بنجاح</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل دفع كامل المبلغ (${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع) للشريك زهراء</p>
-                        <button id="success-close-partner3" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-bold">
-                          حسناً
-                        </button>
-                      </div>
-                    `;
-                    
                     document.body.removeChild(modalDiv);
-                    document.body.appendChild(successDiv);
                     
-                    // تحديث حالة الدفع في DOM
-                    const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                    partnerCards.forEach(card => {
-                      const nameElement = card.querySelector('h4.text-lg.font-bold');
-                      if (nameElement && nameElement.textContent === 'زهراء') {
-                        const amountElement = card.querySelector('p.text-2xl.font-bold');
-                        if (amountElement) {
-                          amountElement.innerHTML = `0 د.ع <span class="text-green-500 text-sm mr-2 font-bold">(تم الدفع)</span>`;
-                        }
-                      }
+                    // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                    setPaymentAction({
+                      type: 'full',
+                      partner: 'زهراء',
+                      partnerShare: analyticsData.netProfit / 3
                     });
-                    
-                    document.getElementById('success-close-partner3')?.addEventListener('click', () => {
-                      document.body.removeChild(successDiv);
-                    });
+                    setShowPasswordConfirm(true);
                   });
                   
                   // إضافة وظيفة الدفع الجزئي
@@ -1471,44 +1424,18 @@ export function Analytics() {
                         return;
                       }
                       
-                      const remainingAmount = totalAmount - partialAmount;
-                      
-                      const successDiv = document.createElement('div');
-                      successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                      successDiv.innerHTML = `
-                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                          <div class="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          </div>
-                          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع الجزئي بنجاح</h3>
-                          <p class="text-gray-600 dark:text-gray-400 mb-2">تم تسجيل دفع جزئي بقيمة ${partialAmount.toLocaleString('ar-IQ')} د.ع للشريك زهراء</p>
-                          <p class="text-gray-600 dark:text-gray-400 mb-6">المبلغ المتبقي: ${remainingAmount.toLocaleString('ar-IQ')} د.ع</p>
-                          <button id="partial-success-close-partner3" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
-                            حسناً
-                          </button>
-                        </div>
-                      `;
-                      
                       document.body.removeChild(partialModalDiv);
-                      document.body.appendChild(successDiv);
                       
-                      // تحديث حالة الدفع الجزئي في DOM
-                      const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                      partnerCards.forEach(card => {
-                        const nameElement = card.querySelector('h4.text-lg.font-bold');
-                        if (nameElement && nameElement.textContent === 'زهراء') {
-                          const amountElement = card.querySelector('p.text-2xl.font-bold');
-                          if (amountElement) {
-                            amountElement.innerHTML = `${remainingAmount.toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 text-sm mr-2 font-bold">(دفع جزئي)</span>`;
-                          }
-                        }
+                      // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                      setPaymentAction({
+                        type: 'partial',
+                        partner: 'زهراء',
+                        partnerShare: totalAmount,
+                        amount: partialAmount
                       });
+                      setShowPasswordConfirm(true);
                       
-                      document.getElementById('partial-success-close-partner3')?.addEventListener('click', () => {
-                        document.body.removeChild(successDiv);
-                      });
+
                     });
                     
                     document.getElementById('cancel-partial-partner3')?.addEventListener('click', () => {
