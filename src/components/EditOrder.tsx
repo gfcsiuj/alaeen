@@ -47,6 +47,8 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     console.log('- التاريخ:', formData.date, typeof formData.date);
     console.log('- تاريخ الإنشاء:', formData.createdAt, typeof formData.createdAt);
     console.groupEnd();
+
+  alert('تم عرض معلومات التصحيح في وحدة تحكم المتصفح (F12)');
   };
   
   // دالة لإعادة تعيين النموذج إلى القيم الأصلية للطلب
@@ -89,9 +91,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
       printingEmployeeAmount: order.printingEmployeeAmount ? order.printingEmployeeAmount.toString() : '',
     });
   };
-    
-    alert('تم عرض معلومات التصحيح في وحدة تحكم المتصفح (F12)');
-  };
+
   const [formData, setFormData] = useState({
     id: '',
     customerName: '',
@@ -1193,4 +1193,4 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
       </div>
     </div>
   );
-  
+  }
