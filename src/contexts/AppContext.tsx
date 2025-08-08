@@ -66,20 +66,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsSyncing(true);
       console.log('جاري الاتصال بـ Firebase والاشتراك في التغييرات...');
       
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      const syncTimeoutId = setTimeout(() => {
+        if (isSyncing) {
+          console.log('تم تجاوز وقت المزامنة، إعادة تعيين الحالة...');
+          setIsSyncing(false);
+        }
+      }, 30000); // 30 ثانية كحد أقصى للمزامنة
+      
       const unsubscribe = subscribeToOrders((firebaseOrders) => {
         console.log('تم استلام تحديث من Firebase:', firebaseOrders.length, 'طلب');
         setLocalOrders(firebaseOrders);
         setIsSyncing(false);
+        clearTimeout(syncTimeoutId); // إلغاء المؤقت عند نجاح المزامنة
       });
 
       return () => {
         console.log('إلغاء الاشتراك في تغييرات Firebase');
+        clearTimeout(syncTimeoutId); // تنظيف المؤقت عند إلغاء الاشتراك
         unsubscribe();
       };
     } else {
       console.log('غير متصل بالإنترنت، لا يمكن الاشتراك في تغييرات Firebase');
     }
-  }, [isOnline]);
+  }, [isOnline, isSyncing]);
 
   // حفظ الإعدادات في localStorage عند تغييرها
   useEffect(() => {
@@ -108,8 +118,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     try {
       setIsSyncing(true);
-      const addedOrder = await addNewOrder(newOrder);
-      // لا نحتاج لتحديث الحالة محلياً لأن Firebase ستقوم بإرسال التحديث عبر الاشتراك
+      console.log('بدء إضافة طلب جديد...');
+      
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      const syncTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('انتهت مهلة إضافة الطلب، يرجى المحاولة مرة أخرى'));
+        }, 15000); // 15 ثانية كحد أقصى للإضافة
+      });
+      
+      // استخدام Promise.race للتعامل مع حالة انتهاء المهلة
+      const addedOrder = await Promise.race([
+        addNewOrder(newOrder),
+        syncTimeoutPromise
+      ]) as Order;
+      
+      console.log('تم إضافة الطلب بنجاح مع المعرف:', addedOrder.id);
+      // إضافة الطلب محلياً للتحديث الفوري
+      setLocalOrders(prevOrders => [addedOrder, ...prevOrders]);
       setIsSyncing(false);
       return addedOrder;
     } catch (error) {
@@ -152,8 +178,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     try {
       setIsSyncing(true);
-      await deleteOrderFromDB(id);
-      // لا نحتاج لتحديث الحالة محلياً لأن Firebase ستقوم بإرسال التحديث عبر الاشتراك
+      console.log('بدء حذف الطلب برقم:', id);
+      
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      const syncTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('انتهت مهلة حذف الطلب، يرجى المحاولة مرة أخرى'));
+        }, 15000); // 15 ثانية كحد أقصى للحذف
+      });
+      
+      // حذف الطلب من Firebase مع مراعاة المهلة الزمنية
+      await Promise.race([deleteOrderFromDB(id), syncTimeoutPromise]);
+      console.log('تم حذف الطلب بنجاح برقم:', id);
+      
+      // حذف الطلب محلياً للتحديث الفوري
+      setLocalOrders(prevOrders => prevOrders.filter(order => order.id !== id));
+      
       setIsSyncing(false);
     } catch (error) {
       setIsSyncing(false);
@@ -188,20 +228,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       
       setIsSyncing(true);
+      console.log('AppContext: بدء تحديث الطلب...');
       
-      // التحقق من وجود الطلب في Firebase
-      const existingOrder = await getOrderById(updatedOrder.id);
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      const syncTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('انتهت مهلة تحديث الطلب، يرجى المحاولة مرة أخرى'));
+        }, 15000); // 15 ثانية كحد أقصى للتحديث
+      });
+      
+      // التحقق من وجود الطلب في Firebase مع مراعاة المهلة الزمنية
+      const existingOrderPromise = getOrderById(updatedOrder.id);
+      const existingOrder = await Promise.race([existingOrderPromise, syncTimeoutPromise]);
+      
       if (!existingOrder) {
         setIsSyncing(false);
         console.error(`AppContext: Order with ID ${updatedOrder.id} not found in Firebase`);
         throw new Error(`الطلب برقم ${updatedOrder.id} غير موجود`);
       }
       
-      // تحديث الطلب في Firebase
-      await saveOrder(updatedOrder);
+      // تحديث الطلب في Firebase مع مراعاة المهلة الزمنية
+      await Promise.race([saveOrder(updatedOrder), syncTimeoutPromise]);
       console.log('AppContext: Order updated successfully in Firebase');
       
-      // لا نحتاج لتحديث الحالة محلياً لأن Firebase ستقوم بإرسال التحديث عبر الاشتراك
+      // تحديث الطلب محلياً للتحديث الفوري
+      setLocalOrders(prevOrders => {
+        return prevOrders.map(order => 
+          order.id === updatedOrder.id ? updatedOrder : order
+        );
+      });
+      
       setIsSyncing(false);
     } catch (error) {
       setIsSyncing(false);
