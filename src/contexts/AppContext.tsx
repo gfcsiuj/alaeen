@@ -124,7 +124,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const syncTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('انتهت مهلة إضافة الطلب، يرجى المحاولة مرة أخرى'));
-        }, 15000); // 15 ثانية كحد أقصى للإضافة
+        }, 30000); // 30 ثانية كحد أقصى للإضافة
       });
       
       // استخدام Promise.race للتعامل مع حالة انتهاء المهلة
@@ -184,7 +184,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const syncTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('انتهت مهلة حذف الطلب، يرجى المحاولة مرة أخرى'));
-        }, 15000); // 15 ثانية كحد أقصى للحذف
+        }, 30000); // 30 ثانية كحد أقصى للحذف
       });
       
       // حذف الطلب من Firebase مع مراعاة المهلة الزمنية
@@ -234,7 +234,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const syncTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('انتهت مهلة تحديث الطلب، يرجى المحاولة مرة أخرى'));
-        }, 15000); // 15 ثانية كحد أقصى للتحديث
+        }, 30000); // 30 ثانية كحد أقصى للتحديث
       });
       
       // التحقق من وجود الطلب في Firebase مع مراعاة المهلة الزمنية

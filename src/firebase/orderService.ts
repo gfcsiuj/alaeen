@@ -34,13 +34,18 @@ export const saveOrder = async (order: Order): Promise<void> => {
     // إنشاء وعد مع مهلة زمنية
     const savePromise = set(orderRef, updatedOrder);
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب')), 15000);
+      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب')), 30000);
     });
     
     await Promise.race([savePromise, timeoutPromise]);
     
-    // التحقق من نجاح الحفظ
-    const snapshot = await get(orderRef);
+    // التحقق من نجاح الحفظ مع مهلة زمنية
+    const checkPromise = get(orderRef);
+    const checkTimeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('انتهت مهلة التحقق من حفظ الطلب')), 30000);
+    });
+    
+    const snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
     if (!snapshot.exists()) {
       throw new Error('فشل في التحقق من حفظ الطلب');
     }
@@ -88,14 +93,28 @@ export const addNewOrder = async (order: Omit<Order, 'id'>): Promise<Order> => {
       newOrder.createdAt = new Date().toISOString();
     }
     
-    // حفظ الطلب في قاعدة البيانات
+    // حفظ الطلب في قاعدة البيانات مع مهلة زمنية
     console.log('جاري حفظ الطلب في Firebase...');
-    await set(newOrderRef, newOrder);
+    
+    // إنشاء وعد للحفظ مع مهلة زمنية
+    const savePromise = set(newOrderRef, newOrder);
+    const saveTimeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب الجديد')), 30000);
+    });
+    
+    await Promise.race([savePromise, saveTimeoutPromise]);
     console.log('تم إضافة طلب جديد بنجاح في Firebase:', newOrderId);
     
-    // التحقق من نجاح الإضافة
+    // التحقق من نجاح الإضافة مع مهلة زمنية
     const savedOrderRef = ref(db, `orders/${newOrderId}`);
-    const snapshot = await get(savedOrderRef);
+    
+    // إنشاء وعد للتحقق مع مهلة زمنية
+    const checkPromise = get(savedOrderRef);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('انتهت مهلة التحقق من إضافة الطلب')), 30000);
+    });
+    
+    const snapshot = await Promise.race([checkPromise, timeoutPromise]) as any;
     
     if (!snapshot.exists()) {
       throw new Error('فشل في التحقق من إضافة الطلب');
@@ -130,7 +149,7 @@ export const deleteOrderFromDB = async (orderId: string): Promise<void> => {
     console.log('جاري التحقق من وجود الطلب...');
     const checkPromise = get(orderRef);
     const checkTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 15000);
+      setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 30000);
     });
     
     const snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
@@ -145,7 +164,7 @@ export const deleteOrderFromDB = async (orderId: string): Promise<void> => {
     
     const deletePromise = remove(orderRef);
     const deleteTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة حذف الطلب')), 15000);
+      setTimeout(() => reject(new Error('انتهت مهلة حذف الطلب')), 30000);
     });
     
     await Promise.race([deletePromise, deleteTimeoutPromise]);
@@ -153,7 +172,7 @@ export const deleteOrderFromDB = async (orderId: string): Promise<void> => {
     // التحقق من نجاح الحذف
     const verifyPromise = get(orderRef);
     const verifyTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من حذف الطلب')), 15000);
+      setTimeout(() => reject(new Error('انتهت مهلة التحقق من حذف الطلب')), 30000);
     });
     
     const verifySnapshot = await Promise.race([verifyPromise, verifyTimeoutPromise]) as any;
@@ -187,9 +206,9 @@ export const subscribeToOrders = (callback: (orders: Order[]) => void): (() => v
     }
     
     connectionTimeout = setTimeout(() => {
-      console.warn('انتهت مهلة انتظار البيانات من Firebase (15 ثانية)');
+      console.warn('انتهت مهلة انتظار البيانات من Firebase (30 ثانية)');
       callback([]); // استدعاء رد النداء بقائمة فارغة في حالة انتهاء المهلة
-    }, 15000);
+    }, 30000);
   };
   
   // بدء مؤقت الاتصال الأولي
@@ -279,7 +298,7 @@ export const updateOrderInDB = async (orderId: string, updates: Partial<Order>):
     console.log('جاري التحقق من وجود الطلب...');
     const checkPromise = get(orderRef);
     const checkTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 15000);
+      setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 30000);
     });
     
     const snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
@@ -299,7 +318,7 @@ export const updateOrderInDB = async (orderId: string, updates: Partial<Order>):
     
     const updatePromise = update(orderRef, updatedData);
     const updateTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة تحديث الطلب')), 15000);
+      setTimeout(() => reject(new Error('انتهت مهلة تحديث الطلب')), 30000);
     });
     
     await Promise.race([updatePromise, updateTimeoutPromise]);
@@ -332,7 +351,7 @@ export const getOrderById = async (orderId: string): Promise<Order | null> => {
     
     const getPromise = get(orderRef);
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة البحث عن الطلب')), 15000);
+      setTimeout(() => reject(new Error('انتهت مهلة البحث عن الطلب')), 30000);
     });
     
     const snapshot = await Promise.race([getPromise, timeoutPromise]) as any;
