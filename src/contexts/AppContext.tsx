@@ -60,31 +60,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // الاشتراك في التغييرات من Firebase
+  // الاشتراك في التغييرات من Firebase مع آلية إعادة المحاولة
   useEffect(() => {
     if (isOnline) {
       setIsSyncing(true);
       console.log('جاري الاتصال بـ Firebase والاشتراك في التغييرات...');
       
-      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة مع زيادة المهلة
       const syncTimeoutId = setTimeout(() => {
         if (isSyncing) {
           console.log('تم تجاوز وقت المزامنة، إعادة تعيين الحالة...');
           setIsSyncing(false);
         }
-      }, 30000); // 30 ثانية كحد أقصى للمزامنة
+      }, 60000); // زيادة المهلة إلى 60 ثانية كحد أقصى للمزامنة
       
-      const unsubscribe = subscribeToOrders((firebaseOrders) => {
-        console.log('تم استلام تحديث من Firebase:', firebaseOrders.length, 'طلب');
-        setLocalOrders(firebaseOrders);
-        setIsSyncing(false);
-        clearTimeout(syncTimeoutId); // إلغاء المؤقت عند نجاح المزامنة
-      });
+      // آلية إعادة المحاولة للاشتراك في التغييرات
+      let subscribeAttempts = 0;
+      const maxSubscribeAttempts = 3;
+      let unsubscribeFunction: (() => void) | null = null;
+      
+      const attemptSubscribe = async () => {
+        try {
+          console.log(`محاولة الاشتراك ${subscribeAttempts + 1}/${maxSubscribeAttempts}...`);
+          
+          unsubscribeFunction = subscribeToOrders((firebaseOrders) => {
+            console.log('تم استلام تحديث من Firebase:', firebaseOrders.length, 'طلب');
+            setLocalOrders(firebaseOrders);
+            setIsSyncing(false);
+            clearTimeout(syncTimeoutId); // إلغاء المؤقت عند نجاح المزامنة
+          });
+          
+          // إذا وصلنا إلى هنا، فقد نجحت عملية الاشتراك
+          console.log('تم الاشتراك بنجاح في تغييرات Firebase');
+        } catch (error) {
+          subscribeAttempts++;
+          console.warn(`فشلت المحاولة ${subscribeAttempts}/${maxSubscribeAttempts} للاشتراك:`, error);
+          
+          if (subscribeAttempts < maxSubscribeAttempts) {
+            // الانتظار قبل إعادة المحاولة
+            const retryDelay = 2000 * subscribeAttempts;
+            console.log(`إعادة المحاولة بعد ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            return attemptSubscribe(); // إعادة المحاولة
+          } else {
+            console.error('فشل في الاشتراك بعد عدة محاولات');
+            setIsSyncing(false);
+          }
+        }
+      };
+      
+      // بدء محاولات الاشتراك
+      attemptSubscribe();
 
       return () => {
         console.log('إلغاء الاشتراك في تغييرات Firebase');
         clearTimeout(syncTimeoutId); // تنظيف المؤقت عند إلغاء الاشتراك
-        unsubscribe();
+        if (unsubscribeFunction) {
+          unsubscribeFunction();
+        }
       };
     } else {
       console.log('غير متصل بالإنترنت، لا يمكن الاشتراك في تغييرات Firebase');
@@ -120,18 +153,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsSyncing(true);
       console.log('بدء إضافة طلب جديد...');
       
-      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة مع زيادة المهلة
       const syncTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('انتهت مهلة إضافة الطلب، يرجى المحاولة مرة أخرى'));
-        }, 30000); // 30 ثانية كحد أقصى للإضافة
+        }, 60000); // زيادة المهلة إلى 60 ثانية كحد أقصى للإضافة
       });
       
-      // استخدام Promise.race للتعامل مع حالة انتهاء المهلة
-      const addedOrder = await Promise.race([
-        addNewOrder(newOrder),
-        syncTimeoutPromise
-      ]) as Order;
+      // محاولات متعددة لإضافة الطلب
+      let addAttempts = 0;
+      const maxAddAttempts = 3;
+      let addedOrder: Order | null = null;
+      
+      while (addAttempts < maxAddAttempts) {
+        try {
+          // استخدام Promise.race للتعامل مع حالة انتهاء المهلة
+          addedOrder = await Promise.race([
+            addNewOrder(newOrder),
+            syncTimeoutPromise
+          ]) as Order;
+          
+          console.log(`تم إضافة الطلب بنجاح بعد ${addAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } catch (error) {
+          addAttempts++;
+          console.warn(`فشلت المحاولة ${addAttempts}/${maxAddAttempts} لإضافة الطلب:`, error);
+          
+          if (addAttempts >= maxAddAttempts) {
+            throw new Error('فشل في إضافة الطلب بعد عدة محاولات');
+          }
+          
+          // الانتظار قبل إعادة المحاولة
+          await new Promise(resolve => setTimeout(resolve, 2000 * addAttempts));
+          console.log(`إعادة المحاولة ${addAttempts + 1}/${maxAddAttempts} لإضافة الطلب...`);
+        }
+      }
+      
+      if (!addedOrder) {
+        throw new Error('فشل في إضافة الطلب');
+      }
       
       console.log('تم إضافة الطلب بنجاح مع المعرف:', addedOrder.id);
       // إضافة الطلب محلياً للتحديث الفوري
@@ -145,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  // دالة لتحديث الطلبات (لن تستخدم عادة لأن Firebase تقوم بالمزامنة تلقائياً)
+  // دالة لتحديث الطلبات مع آلية إعادة المحاولة
   const setOrders = (ordersOrUpdater: Order[] | ((prevOrders: Order[]) => Order[])) => {
     // تحديث محلي أولاً
     setLocalOrders(ordersOrUpdater);
@@ -156,16 +216,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? ordersOrUpdater(orders)
         : ordersOrUpdater;
         
-      // مزامنة كل طلب مع Firebase
+      // مزامنة كل طلب مع Firebase مع آلية إعادة المحاولة
       setIsSyncing(true);
-      Promise.all(updatedOrders.map(order => saveOrder(order)))
-        .then(() => {
-          console.log('تمت مزامنة جميع الطلبات مع Firebase');
+      
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      const syncTimeoutId = setTimeout(() => {
+        if (isSyncing) {
+          console.log('تم تجاوز وقت مزامنة الطلبات، إعادة تعيين الحالة...');
           setIsSyncing(false);
+        }
+      }, 60000); // 60 ثانية كحد أقصى للمزامنة
+      
+      // وظيفة مساعدة لمزامنة طلب واحد مع إعادة المحاولة
+      const syncOrderWithRetry = async (order: Order, maxAttempts = 3) => {
+        let attempts = 0;
+        
+        while (attempts < maxAttempts) {
+          try {
+            await saveOrder(order);
+            return true; // نجاح
+          } catch (error) {
+            attempts++;
+            console.warn(`فشلت المحاولة ${attempts}/${maxAttempts} لمزامنة الطلب ${order.id}:`, error);
+            
+            if (attempts >= maxAttempts) {
+              console.error(`فشل في مزامنة الطلب ${order.id} بعد ${maxAttempts} محاولات`);
+              return false; // فشل بعد استنفاد جميع المحاولات
+            }
+            
+            // الانتظار قبل إعادة المحاولة
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+            console.log(`إعادة المحاولة ${attempts + 1}/${maxAttempts} لمزامنة الطلب ${order.id}...`);
+          }
+        }
+        
+        return false; // لن يصل إلى هنا عادة، ولكن للتأكد من إرجاع قيمة
+      };
+      
+      // مزامنة جميع الطلبات مع إعادة المحاولة
+      Promise.all(updatedOrders.map(order => syncOrderWithRetry(order)))
+        .then(results => {
+          const successCount = results.filter(result => result).length;
+          console.log(`تمت مزامنة ${successCount} من ${updatedOrders.length} طلب مع Firebase`);
+          setIsSyncing(false);
+          clearTimeout(syncTimeoutId);
         })
         .catch(error => {
           console.error('فشل في مزامنة الطلبات مع Firebase:', error);
           setIsSyncing(false);
+          clearTimeout(syncTimeoutId);
         });
     }
   };
@@ -180,15 +279,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsSyncing(true);
       console.log('بدء حذف الطلب برقم:', id);
       
-      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة مع زيادة المهلة
       const syncTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('انتهت مهلة حذف الطلب، يرجى المحاولة مرة أخرى'));
-        }, 30000); // 30 ثانية كحد أقصى للحذف
+        }, 60000); // زيادة المهلة إلى 60 ثانية كحد أقصى للحذف
       });
       
-      // حذف الطلب من Firebase مع مراعاة المهلة الزمنية
-      await Promise.race([deleteOrderFromDB(id), syncTimeoutPromise]);
+      // محاولات متعددة لحذف الطلب
+      let deleteAttempts = 0;
+      const maxDeleteAttempts = 3;
+      
+      while (deleteAttempts < maxDeleteAttempts) {
+        try {
+          // حذف الطلب من Firebase مع مراعاة المهلة الزمنية
+          await Promise.race([deleteOrderFromDB(id), syncTimeoutPromise]);
+          console.log(`تم حذف الطلب بنجاح بعد ${deleteAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } catch (error) {
+          deleteAttempts++;
+          console.warn(`فشلت المحاولة ${deleteAttempts}/${maxDeleteAttempts} لحذف الطلب:`, error);
+          
+          if (deleteAttempts >= maxDeleteAttempts) {
+            throw new Error('فشل في حذف الطلب بعد عدة محاولات');
+          }
+          
+          // الانتظار قبل إعادة المحاولة
+          await new Promise(resolve => setTimeout(resolve, 2000 * deleteAttempts));
+          console.log(`إعادة المحاولة ${deleteAttempts + 1}/${maxDeleteAttempts} لحذف الطلب...`);
+        }
+      }
       console.log('تم حذف الطلب بنجاح برقم:', id);
       
       // حذف الطلب محلياً للتحديث الفوري
@@ -230,11 +350,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsSyncing(true);
       console.log('AppContext: بدء تحديث الطلب...');
       
-      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة
+      // إضافة مؤقت لإعادة تعيين حالة المزامنة في حالة استمرارها لفترة طويلة مع زيادة المهلة
       const syncTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('انتهت مهلة تحديث الطلب، يرجى المحاولة مرة أخرى'));
-        }, 30000); // 30 ثانية كحد أقصى للتحديث
+        }, 60000); // زيادة المهلة إلى 60 ثانية كحد أقصى للتحديث
       });
       
       // التحقق من وجود الطلب في Firebase مع مراعاة المهلة الزمنية
@@ -247,8 +367,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error(`الطلب برقم ${updatedOrder.id} غير موجود`);
       }
       
-      // تحديث الطلب في Firebase مع مراعاة المهلة الزمنية
-      await Promise.race([saveOrder(updatedOrder), syncTimeoutPromise]);
+      // محاولات متعددة لتحديث الطلب
+      let updateAttempts = 0;
+      const maxUpdateAttempts = 3;
+      
+      while (updateAttempts < maxUpdateAttempts) {
+        try {
+          // تحديث الطلب في Firebase مع مراعاة المهلة الزمنية
+          await Promise.race([saveOrder(updatedOrder), syncTimeoutPromise]);
+          console.log(`تم تحديث الطلب بنجاح بعد ${updateAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } catch (error) {
+          updateAttempts++;
+          console.warn(`فشلت المحاولة ${updateAttempts}/${maxUpdateAttempts} لتحديث الطلب:`, error);
+          
+          if (updateAttempts >= maxUpdateAttempts) {
+            throw new Error('فشل في تحديث الطلب بعد عدة محاولات');
+          }
+          
+          // الانتظار قبل إعادة المحاولة
+          await new Promise(resolve => setTimeout(resolve, 2000 * updateAttempts));
+          console.log(`إعادة المحاولة ${updateAttempts + 1}/${maxUpdateAttempts} لتحديث الطلب...`);
+        }
+      }
       console.log('AppContext: Order updated successfully in Firebase');
       
       // تحديث الطلب محلياً للتحديث الفوري

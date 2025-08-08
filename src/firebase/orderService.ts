@@ -31,22 +31,70 @@ export const saveOrder = async (order: Order): Promise<void> => {
     // حفظ الطلب في قاعدة البيانات مع مهلة زمنية
     console.log('جاري حفظ الطلب في Firebase...');
     
-    // إنشاء وعد مع مهلة زمنية
+    // إنشاء وعد مع مهلة زمنية أطول
     const savePromise = set(orderRef, updatedOrder);
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب')), 30000);
+      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
     });
     
-    await Promise.race([savePromise, timeoutPromise]);
+    // محاولات إعادة المحاولة في حالة الفشل
+    let attempts = 0;
+    const maxAttempts = 3;
     
-    // التحقق من نجاح الحفظ مع مهلة زمنية
-    const checkPromise = get(orderRef);
-    const checkTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من حفظ الطلب')), 30000);
-    });
+    while (attempts < maxAttempts) {
+      try {
+        await Promise.race([savePromise, timeoutPromise]);
+        console.log(`تم حفظ الطلب بنجاح بعد ${attempts + 1} محاولة`);
+        break; // الخروج من الحلقة في حالة النجاح
+      } catch (error) {
+        attempts++;
+        console.warn(`فشلت المحاولة ${attempts}/${maxAttempts} لحفظ الطلب:`, error);
+        
+        if (attempts >= maxAttempts) {
+          throw error; // إعادة رمي الخطأ بعد استنفاد جميع المحاولات
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+        console.log(`إعادة المحاولة ${attempts + 1}/${maxAttempts} لحفظ الطلب...`);
+      }
+    }
     
-    const snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
-    if (!snapshot.exists()) {
+    // التحقق من نجاح الحفظ مع مهلة زمنية أطول ومحاولات متعددة
+    let verifyAttempts = 0;
+    const maxVerifyAttempts = 3;
+    let snapshot: any = null;
+    
+    while (verifyAttempts < maxVerifyAttempts) {
+      try {
+        const checkPromise = get(orderRef);
+        const checkTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة التحقق من حفظ الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+        });
+        
+        snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
+        
+        if (snapshot.exists()) {
+          console.log(`تم التحقق من حفظ الطلب بنجاح بعد ${verifyAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } else {
+          throw new Error('الطلب غير موجود في قاعدة البيانات');
+        }
+      } catch (error) {
+        verifyAttempts++;
+        console.warn(`فشلت المحاولة ${verifyAttempts}/${maxVerifyAttempts} للتحقق من حفظ الطلب:`, error);
+        
+        if (verifyAttempts >= maxVerifyAttempts) {
+          throw new Error('فشل في التحقق من حفظ الطلب بعد عدة محاولات');
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * verifyAttempts));
+        console.log(`إعادة المحاولة ${verifyAttempts + 1}/${maxVerifyAttempts} للتحقق من حفظ الطلب...`);
+      }
+    }
+    
+    if (!snapshot || !snapshot.exists()) {
       throw new Error('فشل في التحقق من حفظ الطلب');
     }
     
@@ -96,27 +144,75 @@ export const addNewOrder = async (order: Omit<Order, 'id'>): Promise<Order> => {
     // حفظ الطلب في قاعدة البيانات مع مهلة زمنية
     console.log('جاري حفظ الطلب في Firebase...');
     
-    // إنشاء وعد للحفظ مع مهلة زمنية
+    // إنشاء وعد للحفظ مع مهلة زمنية أطول ومحاولات متعددة
     const savePromise = set(newOrderRef, newOrder);
     const saveTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب الجديد')), 30000);
+      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب الجديد')), 60000); // زيادة المهلة إلى 60 ثانية
     });
     
-    await Promise.race([savePromise, saveTimeoutPromise]);
+    // محاولات إعادة المحاولة في حالة الفشل
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        await Promise.race([savePromise, saveTimeoutPromise]);
+        console.log(`تم حفظ الطلب الجديد بنجاح بعد ${attempts + 1} محاولة`);
+        break; // الخروج من الحلقة في حالة النجاح
+      } catch (error) {
+        attempts++;
+        console.warn(`فشلت المحاولة ${attempts}/${maxAttempts} لحفظ الطلب الجديد:`, error);
+        
+        if (attempts >= maxAttempts) {
+          throw error; // إعادة رمي الخطأ بعد استنفاد جميع المحاولات
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+        console.log(`إعادة المحاولة ${attempts + 1}/${maxAttempts} لحفظ الطلب الجديد...`);
+      }
+    }
+    
     console.log('تم إضافة طلب جديد بنجاح في Firebase:', newOrderId);
     
-    // التحقق من نجاح الإضافة مع مهلة زمنية
+    // التحقق من نجاح الإضافة مع مهلة زمنية أطول ومحاولات متعددة
     const savedOrderRef = ref(db, `orders/${newOrderId}`);
     
-    // إنشاء وعد للتحقق مع مهلة زمنية
-    const checkPromise = get(savedOrderRef);
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من إضافة الطلب')), 30000);
-    });
+    // محاولات متعددة للتحقق
+    let verifyAttempts = 0;
+    const maxVerifyAttempts = 3;
+    let snapshot: any = null;
     
-    const snapshot = await Promise.race([checkPromise, timeoutPromise]) as any;
+    while (verifyAttempts < maxVerifyAttempts) {
+      try {
+        const checkPromise = get(savedOrderRef);
+        const verifyTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة التحقق من إضافة الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+        });
+        
+        snapshot = await Promise.race([checkPromise, verifyTimeoutPromise]) as any;
+        
+        if (snapshot.exists()) {
+          console.log(`تم التحقق من إضافة الطلب الجديد بنجاح بعد ${verifyAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } else {
+          throw new Error('الطلب الجديد غير موجود في قاعدة البيانات');
+        }
+      } catch (error) {
+        verifyAttempts++;
+        console.warn(`فشلت المحاولة ${verifyAttempts}/${maxVerifyAttempts} للتحقق من إضافة الطلب الجديد:`, error);
+        
+        if (verifyAttempts >= maxVerifyAttempts) {
+          throw new Error('فشل في التحقق من إضافة الطلب الجديد بعد عدة محاولات');
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * verifyAttempts));
+        console.log(`إعادة المحاولة ${verifyAttempts + 1}/${maxVerifyAttempts} للتحقق من إضافة الطلب الجديد...`);
+      }
+    }
     
-    if (!snapshot.exists()) {
+    if (!snapshot || !snapshot.exists()) {
       throw new Error('فشل في التحقق من إضافة الطلب');
     }
     
@@ -142,21 +238,42 @@ export const deleteOrderFromDB = async (orderId: string): Promise<void> => {
       throw new Error('معرف الطلب مطلوب للحذف');
     }
     
-    // التحقق من وجود الطلب قبل الحذف
+    // التحقق من وجود الطلب قبل الحذف مع محاولات متعددة
     const orderRef = ref(db, `orders/${orderId}`);
     
-    // التحقق من وجود الطلب مع مهلة زمنية
-    console.log('جاري التحقق من وجود الطلب...');
-    const checkPromise = get(orderRef);
-    const checkTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 30000);
-    });
+    // محاولات متعددة للتحقق
+    let checkAttempts = 0;
+    const maxCheckAttempts = 3;
+    let snapshot: any = null;
     
-    const snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
-    
-    if (!snapshot.exists()) {
-      console.warn(`الطلب برقم ${orderId} غير موجود للحذف`);
-      return; // لا داعي لرمي خطأ إذا كان الطلب غير موجود أصلاً
+    while (checkAttempts < maxCheckAttempts) {
+      try {
+        const checkPromise = get(orderRef);
+        const checkTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+        });
+        
+        snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
+        
+        if (snapshot.exists()) {
+          console.log(`تم التحقق من وجود الطلب بنجاح بعد ${checkAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } else {
+          console.warn(`الطلب برقم ${orderId} غير موجود للحذف`);
+          return; // لا داعي لرمي خطأ إذا كان الطلب غير موجود أصلاً
+        }
+      } catch (error) {
+        checkAttempts++;
+        console.warn(`فشلت المحاولة ${checkAttempts}/${maxCheckAttempts} للتحقق من وجود الطلب:`, error);
+        
+        if (checkAttempts >= maxCheckAttempts) {
+          throw new Error('فشل في التحقق من وجود الطلب بعد عدة محاولات');
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * checkAttempts));
+        console.log(`إعادة المحاولة ${checkAttempts + 1}/${maxCheckAttempts} للتحقق من وجود الطلب...`);
+      }
     }
     
     // حذف الطلب من قاعدة البيانات مع مهلة زمنية
@@ -169,15 +286,41 @@ export const deleteOrderFromDB = async (orderId: string): Promise<void> => {
     
     await Promise.race([deletePromise, deleteTimeoutPromise]);
     
-    // التحقق من نجاح الحذف
-    const verifyPromise = get(orderRef);
-    const verifyTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من حذف الطلب')), 30000);
-    });
+    // التحقق من نجاح الحذف مع محاولات متعددة
+    let verifyAttempts = 0;
+    const maxVerifyAttempts = 3;
+    let verifySnapshot: any = null;
     
-    const verifySnapshot = await Promise.race([verifyPromise, verifyTimeoutPromise]) as any;
+    while (verifyAttempts < maxVerifyAttempts) {
+      try {
+        const verifyPromise = get(orderRef);
+        const verifyTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة التحقق من حذف الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+        });
+        
+        verifySnapshot = await Promise.race([verifyPromise, verifyTimeoutPromise]) as any;
+        
+        if (!verifySnapshot.exists()) {
+          console.log(`تم التحقق من نجاح حذف الطلب بعد ${verifyAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } else {
+          throw new Error('الطلب لا يزال موجود في قاعدة البيانات');
+        }
+      } catch (error) {
+        verifyAttempts++;
+        console.warn(`فشلت المحاولة ${verifyAttempts}/${maxVerifyAttempts} للتحقق من نجاح الحذف:`, error);
+        
+        if (verifyAttempts >= maxVerifyAttempts) {
+          throw new Error('فشل في التحقق من نجاح حذف الطلب بعد عدة محاولات');
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * verifyAttempts));
+        console.log(`إعادة المحاولة ${verifyAttempts + 1}/${maxVerifyAttempts} للتحقق من نجاح الحذف...`);
+      }
+    }
     
-    if (verifySnapshot.exists()) {
+    if (verifySnapshot && verifySnapshot.exists()) {
       throw new Error('فشل في حذف الطلب من قاعدة البيانات');
     }
     
@@ -196,19 +339,30 @@ export const deleteOrderFromDB = async (orderId: string): Promise<void> => {
 export const subscribeToOrders = (callback: (orders: Order[]) => void): (() => void) => {
   console.log('بدء الاشتراك في تحديثات الطلبات...');
   
-  // إنشاء مؤقت للتحقق من الاتصال
+  // إنشاء مؤقت للتحقق من الاتصال مع زيادة المهلة
   let connectionTimeout: NodeJS.Timeout | null = null;
+  let connectionAttempts = 0;
+  const maxConnectionAttempts = 3;
   
-  // إعادة تعيين المؤقت
+  // إعادة تعيين المؤقت مع محاولات إعادة الاتصال
   const resetConnectionTimeout = () => {
     if (connectionTimeout) {
       clearTimeout(connectionTimeout);
     }
     
     connectionTimeout = setTimeout(() => {
-      console.warn('انتهت مهلة انتظار البيانات من Firebase (30 ثانية)');
-      callback([]); // استدعاء رد النداء بقائمة فارغة في حالة انتهاء المهلة
-    }, 30000);
+      console.warn(`انتهت مهلة انتظار البيانات من Firebase (60 ثانية) - المحاولة ${connectionAttempts + 1}/${maxConnectionAttempts}`);
+      
+      connectionAttempts++;
+      if (connectionAttempts < maxConnectionAttempts) {
+        console.log(`إعادة محاولة الاتصال بـ Firebase (${connectionAttempts + 1}/${maxConnectionAttempts})...`);
+        resetConnectionTimeout(); // إعادة تعيين المؤقت للمحاولة التالية
+      } else {
+        console.error('فشلت جميع محاولات الاتصال بـ Firebase');
+        callback([]); // استدعاء رد النداء بقائمة فارغة بعد استنفاد جميع المحاولات
+        connectionAttempts = 0; // إعادة تعيين العداد للمحاولات المستقبلية
+      }
+    }, 60000); // زيادة المهلة إلى 60 ثانية
   };
   
   // بدء مؤقت الاتصال الأولي
@@ -294,16 +448,44 @@ export const updateOrderInDB = async (orderId: string, updates: Partial<Order>):
   try {
     const orderRef = ref(db, `orders/${orderId}`);
     
-    // التحقق من وجود الطلب قبل التحديث مع مهلة زمنية
+    // التحقق من وجود الطلب قبل التحديث مع محاولات متعددة
     console.log('جاري التحقق من وجود الطلب...');
-    const checkPromise = get(orderRef);
-    const checkTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 30000);
-    });
     
-    const snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
+    // محاولات متعددة للتحقق
+    let checkAttempts = 0;
+    const maxCheckAttempts = 3;
+    let snapshot: any = null;
     
-    if (!snapshot.exists()) {
+    while (checkAttempts < maxCheckAttempts) {
+      try {
+        const checkPromise = get(orderRef);
+        const checkTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة التحقق من وجود الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+        });
+        
+        snapshot = await Promise.race([checkPromise, checkTimeoutPromise]) as any;
+        
+        if (snapshot.exists()) {
+          console.log(`تم التحقق من وجود الطلب بنجاح بعد ${checkAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } else {
+          throw new Error(`الطلب برقم ${orderId} غير موجود للتحديث`);
+        }
+      } catch (error) {
+        checkAttempts++;
+        console.warn(`فشلت المحاولة ${checkAttempts}/${maxCheckAttempts} للتحقق من وجود الطلب:`, error);
+        
+        if (checkAttempts >= maxCheckAttempts) {
+          throw new Error('فشل في التحقق من وجود الطلب بعد عدة محاولات');
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * checkAttempts));
+        console.log(`إعادة المحاولة ${checkAttempts + 1}/${maxCheckAttempts} للتحقق من وجود الطلب...`);
+      }
+    }
+    
+    if (!snapshot || !snapshot.exists()) {
       throw new Error(`الطلب برقم ${orderId} غير موجود للتحديث`);
     }
     
@@ -313,15 +495,36 @@ export const updateOrderInDB = async (orderId: string, updates: Partial<Order>):
       updatedAt: new Date().toISOString()
     };
     
-    // تحديث الطلب في قاعدة البيانات مع مهلة زمنية
+    // تحديث الطلب في قاعدة البيانات مع مهلة زمنية أطول ومحاولات متعددة
     console.log('جاري تحديث الطلب في Firebase...');
     
-    const updatePromise = update(orderRef, updatedData);
-    const updateTimeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة تحديث الطلب')), 30000);
-    });
+    // محاولات متعددة للتحديث
+    let updateAttempts = 0;
+    const maxUpdateAttempts = 3;
     
-    await Promise.race([updatePromise, updateTimeoutPromise]);
+    while (updateAttempts < maxUpdateAttempts) {
+      try {
+        const updatePromise = update(orderRef, updatedData);
+        const updateTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة تحديث الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+        });
+        
+        await Promise.race([updatePromise, updateTimeoutPromise]);
+        console.log(`تم تحديث الطلب بنجاح بعد ${updateAttempts + 1} محاولة`);
+        break; // الخروج من الحلقة في حالة النجاح
+      } catch (error) {
+        updateAttempts++;
+        console.warn(`فشلت المحاولة ${updateAttempts}/${maxUpdateAttempts} لتحديث الطلب:`, error);
+        
+        if (updateAttempts >= maxUpdateAttempts) {
+          throw new Error('فشل في تحديث الطلب بعد عدة محاولات');
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * updateAttempts));
+        console.log(`إعادة المحاولة ${updateAttempts + 1}/${maxUpdateAttempts} لتحديث الطلب...`);
+      }
+    }
     
     console.log('تم تحديث الطلب بنجاح في Firebase:', orderId);
   } catch (error) {
@@ -346,24 +549,52 @@ export const getOrderById = async (orderId: string): Promise<Order | null> => {
     
     const orderRef = ref(db, `orders/${orderId}`);
     
-    // البحث عن الطلب مع مهلة زمنية
+    // البحث عن الطلب مع مهلة زمنية أطول ومحاولات متعددة
     console.log('جاري البحث عن الطلب...');
     
-    const getPromise = get(orderRef);
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة البحث عن الطلب')), 30000);
-    });
+    // محاولات متعددة للبحث
+    let searchAttempts = 0;
+    const maxSearchAttempts = 3;
+    let snapshot: any = null;
     
-    const snapshot = await Promise.race([getPromise, timeoutPromise]) as any;
+    while (searchAttempts < maxSearchAttempts) {
+      try {
+        const getPromise = get(orderRef);
+        const searchTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة البحث عن الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+        });
+        
+        snapshot = await Promise.race([getPromise, searchTimeoutPromise]) as any;
+        
+        if (snapshot.exists()) {
+          console.log(`تم العثور على الطلب بنجاح بعد ${searchAttempts + 1} محاولة`);
+          break; // الخروج من الحلقة في حالة النجاح
+        } else {
+          console.log(`الطلب برقم ${orderId} غير موجود`);
+          return null;
+        }
+      } catch (error) {
+        searchAttempts++;
+        console.warn(`فشلت المحاولة ${searchAttempts}/${maxSearchAttempts} للبحث عن الطلب:`, error);
+        
+        if (searchAttempts >= maxSearchAttempts) {
+          throw new Error('فشل في البحث عن الطلب بعد عدة محاولات');
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * searchAttempts));
+        console.log(`إعادة المحاولة ${searchAttempts + 1}/${maxSearchAttempts} للبحث عن الطلب...`);
+      }
+    }
     
-    if (snapshot.exists()) {
-      const orderData = snapshot.val() as Order;
-      console.log(`تم العثور على الطلب برقم ${orderId}`);
-      return orderData;
-    } else {
+    if (!snapshot || !snapshot.exists()) {
       console.log(`الطلب برقم ${orderId} غير موجود`);
       return null;
     }
+    
+    const orderData = snapshot.val() as Order;
+    console.log(`تم العثور على الطلب برقم ${orderId}`);
+    return orderData;
   } catch (error) {
     console.error('خطأ في الحصول على الطلب:', error);
     throw error;

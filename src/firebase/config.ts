@@ -43,18 +43,49 @@ try {
   throw new Error('فشل في تهيئة Firebase. يرجى التحقق من اتصال الإنترنت وإعادة المحاولة.');
 }
 
-// إضافة مستمع للاتصال بقاعدة البيانات
+// إضافة مستمع للاتصال بقاعدة البيانات مع محاولات إعادة الاتصال
 try {
   if (db) {
     // استخدام الدوال المستوردة بالفعل في أعلى الملف
     const connectedRef = ref(db, '.info/connected');
-    onValue(connectedRef, (snap) => {
-      if (snap.val() === true) {
-        console.log('متصل بقاعدة بيانات Firebase');
-      } else {
-        console.warn('غير متصل بقاعدة بيانات Firebase');
-      }
-    });
+    
+    // إضافة محاولات إعادة الاتصال
+    let connectionAttempts = 0;
+    const maxConnectionAttempts = 5;
+    
+    const checkConnection = () => {
+      console.log(`محاولة الاتصال بقاعدة بيانات Firebase (${connectionAttempts + 1}/${maxConnectionAttempts})...`);
+      
+      onValue(connectedRef, (snap) => {
+        if (snap.val() === true) {
+          console.log('متصل بقاعدة بيانات Firebase');
+          connectionAttempts = 0; // إعادة تعيين العداد عند نجاح الاتصال
+        } else {
+          console.warn('غير متصل بقاعدة بيانات Firebase');
+          connectionAttempts++;
+          
+          if (connectionAttempts < maxConnectionAttempts) {
+            console.log(`سيتم إعادة المحاولة بعد ${connectionAttempts * 2} ثوانٍ...`);
+            setTimeout(checkConnection, connectionAttempts * 2000);
+          } else {
+            console.error('فشلت جميع محاولات الاتصال بقاعدة بيانات Firebase');
+          }
+        }
+      }, (error) => {
+        console.error('خطأ في مراقبة حالة الاتصال:', error);
+        connectionAttempts++;
+        
+        if (connectionAttempts < maxConnectionAttempts) {
+          console.log(`سيتم إعادة المحاولة بعد ${connectionAttempts * 2} ثوانٍ...`);
+          setTimeout(checkConnection, connectionAttempts * 2000);
+        } else {
+          console.error('فشلت جميع محاولات الاتصال بقاعدة بيانات Firebase');
+        }
+      });
+    };
+    
+    // بدء فحص الاتصال
+    checkConnection();
   }
 } catch (error) {
   console.warn('تعذر إعداد مستمع الاتصال:', error);
