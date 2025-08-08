@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
+import { getDatabase, ref, onValue } from 'firebase/database';
 import { getAnalytics } from 'firebase/analytics';
 
 // تكوين Firebase
@@ -26,18 +26,8 @@ try {
   app = initializeApp(firebaseConfig);
   console.log('تم تهيئة تطبيق Firebase بنجاح');
   
-  // تهيئة قاعدة البيانات مع إعدادات محسنة
-  db = getDatabase(app, {
-    // تعيين مهلة الاتصال إلى 30 ثانية
-    authTokenExpiration: 30000
-  });
-  
-  // تعيين إعدادات الاتصال لتحسين الأداء
-  const dbRef = db.ref;
-  if (dbRef && typeof dbRef.keepSynced === 'function') {
-    dbRef.keepSynced(true);
-  }
-  
+  // تهيئة قاعدة البيانات
+  db = getDatabase(app);
   console.log('تم تهيئة قاعدة البيانات بنجاح');
   
   // تهيئة التحليلات
@@ -54,15 +44,20 @@ try {
 }
 
 // إضافة مستمع للاتصال بقاعدة البيانات
-const connectedRef = db ? db.ref('.info/connected') : null;
-if (connectedRef) {
-  connectedRef.on('value', (snap) => {
-    if (snap.val() === true) {
-      console.log('متصل بقاعدة بيانات Firebase');
-    } else {
-      console.warn('غير متصل بقاعدة بيانات Firebase');
-    }
-  });
+try {
+  if (db) {
+    // استخدام الدوال المستوردة بالفعل في أعلى الملف
+    const connectedRef = ref(db, '.info/connected');
+    onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        console.log('متصل بقاعدة بيانات Firebase');
+      } else {
+        console.warn('غير متصل بقاعدة بيانات Firebase');
+      }
+    });
+  }
+} catch (error) {
+  console.warn('تعذر إعداد مستمع الاتصال:', error);
 }
 
 export { db, analytics };
