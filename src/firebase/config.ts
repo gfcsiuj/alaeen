@@ -14,6 +14,12 @@ const firebaseConfig = {
   measurementId: "G-DZ4M525RX7"
 };
 
+// التأكد من صحة عنوان قاعدة البيانات
+if (firebaseConfig.databaseURL.endsWith(')')) {
+  // إزالة القوس الزائد إذا وجد
+  firebaseConfig.databaseURL = firebaseConfig.databaseURL.replace(/\)$/, '');
+}
+
 console.log('تهيئة Firebase...');
 
 // تهيئة Firebase مع معالجة الأخطاء

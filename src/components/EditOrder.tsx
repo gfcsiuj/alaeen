@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Star, Plus, X, AlertCircle, Megaphone, Palette, Camera, Printer, DollarSign, Users, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Order } from '../types';
+import { PasswordConfirm } from './PasswordConfirm';
 
 interface EditOrderProps {
   order: Order;
@@ -11,6 +12,7 @@ interface EditOrderProps {
 export default function EditOrder({ order, onClose }: EditOrderProps) {
   const { updateOrder, isOnline, isSyncing } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   
   // Add a close button handler with confirmation
   const handleClose = () => {
@@ -313,7 +315,21 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // التحقق من الاتصال بالإنترنت
+    if (!isOnline) {
+      alert('لا يمكن تعديل الطلب بدون اتصال بالإنترنت. يرجى التحقق من اتصالك والمحاولة مرة أخرى.');
+      return;
+    }
+    
+    // عرض نافذة التحقق من كلمة المرور
+    setShowPasswordConfirm(true);
+  };
+  
+  // دالة تنفيذ تعديل الطلب بعد التحقق من كلمة المرور
+  const executeOrderUpdate = async () => {
     setIsSubmitting(true);
+    setShowPasswordConfirm(false);
     
     console.log('Form submission started');
     console.log('Current formData:', formData);
@@ -1195,6 +1211,15 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
           </form>
         </div>
       </div>
+      
+      {/* نافذة التحقق من كلمة المرور */}
+      {showPasswordConfirm && (
+        <PasswordConfirm
+          onConfirm={executeOrderUpdate}
+          onCancel={() => setShowPasswordConfirm(false)}
+          actionType="edit"
+        />
+      )}
     </div>
   );
 }

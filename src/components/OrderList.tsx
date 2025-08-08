@@ -3,6 +3,7 @@ import { useApp } from '../contexts/AppContext';
 import { Search, Filter, Calendar, User, Package, DollarSign, Users, Edit3, Trash2, Eye } from 'lucide-react';
 import EditOrder from './EditOrder';
 import { Order } from '../types';
+import { PasswordConfirm } from './PasswordConfirm';
 
 export default function OrderList() {
   const { orders, deleteOrder } = useApp();
@@ -11,11 +12,29 @@ export default function OrderList() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   
   // Function to reload the page
   const handleReload = () => {
     console.log('Reloading page...');
     window.location.reload();
+  };
+  
+  // دالة تنفيذ حذف الطلب بعد التحقق من كلمة المرور
+  const executeOrderDelete = async () => {
+    if (!orderToDelete) return;
+    
+    try {
+      await deleteOrder(orderToDelete);
+      alert('تم حذف الطلب بنجاح');
+      setOrderToDelete(null);
+    } catch (error: any) {
+      console.error('خطأ في حذف الطلب:', error);
+      alert(`حدث خطأ أثناء حذف الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`);
+    } finally {
+      setShowPasswordConfirm(false);
+    }
   };
 
   const filteredOrders = orders.filter(order => {
@@ -231,15 +250,10 @@ export default function OrderList() {
                     <span className="text-sm">تعديل</span>
                   </button>
                   <button
-                    onClick={async () => {
+                    onClick={() => {
                       if (window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
-                        try {
-                          await deleteOrder(order.id);
-                          alert('تم حذف الطلب بنجاح');
-                        } catch (error: any) {
-                          console.error('خطأ في حذف الطلب:', error);
-                          alert(`حدث خطأ أثناء حذف الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`);
-                        }
+                        setOrderToDelete(order.id);
+                        setShowPasswordConfirm(true);
                       }
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
@@ -502,6 +516,18 @@ export default function OrderList() {
             />
           </div>
         </div>
+      )}
+
+      {/* Password Confirmation Modal */}
+      {showPasswordConfirm && (
+        <PasswordConfirm
+          onConfirm={executeOrderDelete}
+          onCancel={() => {
+            setShowPasswordConfirm(false);
+            setOrderToDelete(null);
+          }}
+          actionType="delete"
+        />
       )}
     </div>
   );

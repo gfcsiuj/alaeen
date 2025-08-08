@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Moon, Sun, Lock, Download, Upload, Trash2, Shield, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { PasswordConfirm } from './PasswordConfirm';
 
 export function Settings() {
   const { settings, setSettings, orders, setOrders, setIsAuthenticated } = useApp();
   const [showPinInput, setShowPinInput] = useState(false);
   const [newPin, setNewPin] = useState('');
   const [showPin, setShowPin] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
   const toggleTheme = () => {
     const newTheme = settings.theme === 'light' ? 'dark' : 'light';
@@ -72,11 +74,16 @@ export function Settings() {
   };
 
   const clearAllData = () => {
-    if (confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه.')) {
-      setOrders([]);
-      localStorage.removeItem('al-ain-orders');
-      alert('تم حذف جميع البيانات بنجاح.');
-    }
+    // عرض نافذة التحقق من كلمة المرور
+    setShowPasswordConfirm(true);
+  };
+  
+  // دالة تنفيذ حذف البيانات بعد التحقق من كلمة المرور
+  const executeDataDelete = () => {
+    setOrders([]);
+    localStorage.removeItem('al-ain-orders');
+    alert('تم حذف جميع البيانات بنجاح.');
+    setShowPasswordConfirm(false);
   };
 
   const logout = () => {
@@ -284,4 +291,13 @@ export function Settings() {
       </div>
     </div>
   );
+  
+  {/* مكون التحقق من كلمة المرور */}
+  {showPasswordConfirm && (
+    <PasswordConfirm
+      onConfirm={executeDataDelete}
+      onCancel={() => setShowPasswordConfirm(false)}
+      actionType="deleteData"
+    />
+  )}
 }

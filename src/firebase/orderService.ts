@@ -3,7 +3,22 @@ import { db } from './config';
 import { Order } from '../types';
 
 // الحصول على مرجع لقائمة الطلبات
-const ordersRef = ref(db, 'orders');
+let ordersRef;
+
+// دالة للحصول على مرجع الطلبات مع التأكد من صحة الاتصال
+const getOrdersRef = () => {
+  try {
+    // إعادة تهيئة المرجع في كل مرة للتأكد من استخدام أحدث اتصال بقاعدة البيانات
+    ordersRef = ref(db, 'orders');
+    return ordersRef;
+  } catch (error) {
+    console.error('خطأ في الحصول على مرجع الطلبات:', error);
+    throw new Error('فشل في الاتصال بقاعدة بيانات Firebase');
+  }
+};
+
+// تهيئة مرجع الطلبات
+ordersRef = getOrdersRef();
 
 /**
  * حفظ طلب (إضافة أو تحديث طلب موجود)
@@ -25,16 +40,26 @@ export const saveOrder = async (order: Order): Promise<void> => {
       updatedAt: new Date().toISOString()
     };
     
-    // إنشاء مرجع للطلب
-    const orderRef = ref(db, `orders/${order.id}`);
+    // الحصول على مرجع محدث لقاعدة البيانات
+    let orderRef;
+    let savePromise;
+    let timeoutPromise;
     
-    // حفظ الطلب في قاعدة البيانات مع مهلة زمنية
-    console.log('جاري حفظ الطلب في Firebase...');
+    try {
+      // إنشاء مرجع للطلب
+      orderRef = ref(db, `orders/${order.id}`);
+      
+      // حفظ الطلب في قاعدة البيانات مع مهلة زمنية
+      console.log('جاري حفظ الطلب في Firebase...');
+    } catch (refError) {
+      console.error('خطأ في إنشاء مرجع الطلب:', refError);
+      throw new Error('فشل في الاتصال بقاعدة بيانات Firebase');
+    }
     
     // إنشاء وعد مع مهلة زمنية أطول
-    const savePromise = set(orderRef, updatedOrder);
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب')), 60000); // زيادة المهلة إلى 60 ثانية
+    savePromise = set(orderRef, updatedOrder);
+    timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('انتهت مهلة حفظ الطلب')), 90000); // زيادة المهلة إلى 90 ثانية
     });
     
     // محاولات إعادة المحاولة في حالة الفشل
@@ -123,8 +148,11 @@ export const addNewOrder = async (order: Omit<Order, 'id'>): Promise<Order> => {
       throw new Error('نوع الخدمة مطلوب لإضافة طلب جديد');
     }
     
+    // الحصول على مرجع محدث للطلبات
+    const currentOrdersRef = getOrdersRef();
+    
     // إنشاء مرجع جديد مع معرف فريد
-    const newOrderRef = push(ordersRef);
+    const newOrderRef = push(currentOrdersRef);
     const newOrderId = newOrderRef.key;
     
     if (!newOrderId) {

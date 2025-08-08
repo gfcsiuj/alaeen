@@ -1,13 +1,163 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingUp, Users, DollarSign, Calendar, Filter, PieChart, BarChart3, Target } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { PasswordConfirm } from './PasswordConfirm';
 
 export function Analytics() {
   const { orders } = useApp();
   const [timeFilter, setTimeFilter] = useState('all');
   const [customDays, setCustomDays] = useState('7');
   const [filteredOrders, setFilteredOrders] = useState(orders);
+  
+  // حالات للتحقق من كلمة المرور
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [paymentAction, setPaymentAction] = useState<{
+    type: 'full' | 'partial' | 'none';
+    worker?: string;
+    share?: number;
+    partner?: string;
+    partnerShare?: number;
+    amount?: number;
+  } | null>(null);
 
+  // دالة تنفيذ عملية تسجيل الدفع بعد التحقق من كلمة المرور
+  const executePaymentAction = () => {
+    if (!paymentAction) return;
+    
+    // إنشاء العناصر المطلوبة للعرض
+    let modalDiv, successDiv, warningDiv, amountDiv;
+    
+    // تنفيذ الإجراء المناسب بناءً على نوع العملية
+    if (paymentAction.worker) {
+      // تسجيل دفع للعامل
+      const { type, worker, share } = paymentAction;
+      
+      if (type === 'full') {
+        // تسجيل دفع كامل
+        successDiv = document.createElement('div');
+        successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        successDiv.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+            <div class="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع بنجاح</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل دفع كامل المبلغ (${share?.toLocaleString('ar-IQ')} د.ع) للعامل ${worker}</p>
+            <button id="success-close" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-bold">
+              حسناً
+            </button>
+          </div>
+        `;
+        
+        document.body.appendChild(successDiv);
+        
+        // تصفير المبلغ المستحق
+        // تحديث العنصر في DOM
+        const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+        workerCards.forEach(card => {
+          const nameElement = card.querySelector('h4.font-bold');
+          if (nameElement && nameElement.textContent === worker) {
+            const amountElement = card.querySelector('p.text-sm.text-gray-500');
+            if (amountElement) {
+              amountElement.innerHTML = `المبلغ المستحق: 0 د.ع <span class="text-green-500 mr-2 font-bold">(تم الدفع)</span>`;
+            }
+          }
+        });
+        
+        document.getElementById('success-close')?.addEventListener('click', () => {
+          document.body.removeChild(successDiv);
+        });
+      } else if (type === 'partial' && paymentAction.amount) {
+        // تسجيل دفع جزئي
+        const { amount } = paymentAction;
+        
+        successDiv = document.createElement('div');
+        successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        successDiv.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+            <div class="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع الجزئي بنجاح</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-2">تم تسجيل دفع مبلغ (${amount.toLocaleString('ar-IQ')} د.ع) للعامل ${worker}</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">المبلغ المتبقي: ${(share! - amount).toLocaleString('ar-IQ')} د.ع</p>
+            <button id="success-close" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
+              حسناً
+            </button>
+          </div>
+        `;
+        
+        document.body.appendChild(successDiv);
+        
+        // تحديث حالة الدفع الجزئي في DOM
+        const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+        workerCards.forEach(card => {
+          const nameElement = card.querySelector('h4.font-bold');
+          if (nameElement && nameElement.textContent === worker) {
+            const amountElement = card.querySelector('p.text-sm.text-gray-500');
+            if (amountElement) {
+              amountElement.innerHTML = `المبلغ المستحق: ${(share! - amount).toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 mr-2 font-bold">(تم دفع مبلغ جزئي)</span>`;
+            }
+          }
+        });
+        
+        document.getElementById('success-close')?.addEventListener('click', () => {
+          document.body.removeChild(successDiv);
+        });
+      } else if (type === 'none') {
+        // تسجيل عدم الدفع
+        warningDiv = document.createElement('div');
+        warningDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        warningDiv.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+            <div class="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل عدم الدفع</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع المبلغ (${share?.toLocaleString('ar-IQ')} د.ع) للعامل ${worker}</p>
+            <button id="warning-close" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
+              حسناً
+            </button>
+          </div>
+        `;
+        
+        document.body.appendChild(warningDiv);
+        
+        // تحديث حالة الدفع في DOM
+        const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+        workerCards.forEach(card => {
+          const nameElement = card.querySelector('h4.font-bold');
+          if (nameElement && nameElement.textContent === worker) {
+            const amountElement = card.querySelector('p.text-sm.text-gray-500');
+            if (amountElement) {
+              amountElement.innerHTML = `المبلغ المستحق: ${share?.toLocaleString('ar-IQ')} د.ع <span class="text-red-500 mr-2 font-bold">(لم يتم الدفع)</span>`;
+            }
+          }
+        });
+        
+        document.getElementById('warning-close')?.addEventListener('click', () => {
+          document.body.removeChild(warningDiv);
+        });
+      }
+    } else if (paymentAction.partner) {
+      // تسجيل دفع للشريك
+      const { type, partner, partnerShare } = paymentAction;
+      
+      // تنفيذ الإجراء المناسب بناءً على نوع العملية
+      // (يمكن إضافة التنفيذ المشابه للعمال هنا)
+    }
+    
+    // إعادة تعيين حالة الإجراء
+    setPaymentAction(null);
+    setShowPasswordConfirm(false);
+  };
+  
   // تحديث الطلبات المفلترة عند تغيير الفلتر الزمني
   useEffect(() => {
     let filtered = orders;
@@ -540,26 +690,16 @@ export function Analytics() {
                                 
                                 // إضافة مستمعي الأحداث للأزرار
                                 document.getElementById('pay-full')?.addEventListener('click', () => {
-                                  // إظهار رسالة نجاح
-                                  const successDiv = document.createElement('div');
-                                  successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                                  successDiv.innerHTML = `
-                                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                                      <div class="w-20 h-20 mx-auto bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-4">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      </div>
-                                      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع بنجاح</h3>
-                                      <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل دفع كامل المبلغ (${share.toLocaleString('ar-IQ')} د.ع) للعامل ${worker}</p>
-                                      <button id="success-close" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-bold">
-                                        حسناً
-                                      </button>
-                                    </div>
-                                  `;
-                                  
+                                  // إزالة النافذة المنبثقة
                                   document.body.removeChild(modalDiv);
-                                  document.body.appendChild(successDiv);
+                                  
+                                  // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                                  setPaymentAction({
+                                    type: 'full',
+                                    worker,
+                                    share
+                                  });
+                                  setShowPasswordConfirm(true);
                                   
                                   // تصفير المبلغ المستحق
                                   // تحديث العنصر في DOM
@@ -616,27 +756,17 @@ export function Analytics() {
                                       return;
                                     }
                                     
-                                    // إظهار رسالة نجاح
-                                    const successDiv = document.createElement('div');
-                                    successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                                    successDiv.innerHTML = `
-                                      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                                        <div class="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-                                          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                          </svg>
-                                        </div>
-                                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل الدفع الجزئي بنجاح</h3>
-                                        <p class="text-gray-600 dark:text-gray-400 mb-2">تم تسجيل دفع مبلغ (${amount.toLocaleString('ar-IQ')} د.ع) للعامل ${worker}</p>
-                                        <p class="text-gray-600 dark:text-gray-400 mb-6">المبلغ المتبقي: ${(share - amount).toLocaleString('ar-IQ')} د.ع</p>
-                                        <button id="success-close" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
-                                          حسناً
-                                        </button>
-                                      </div>
-                                    `;
-                                    
+                                    // إزالة النافذة المنبثقة
                                     document.body.removeChild(amountDiv);
-                                    document.body.appendChild(successDiv);
+                                    
+                                    // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                                    setPaymentAction({
+                                      type: 'partial',
+                                      worker,
+                                      share,
+                                      amount
+                                    });
+                                    setShowPasswordConfirm(true);
                                     
                                     // تحديث حالة الدفع الجزئي في DOM
                                     const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
@@ -661,26 +791,16 @@ export function Analytics() {
                                 });
                                 
                                 document.getElementById('pay-none')?.addEventListener('click', () => {
-                                  // إظهار رسالة تنبيه
-                                  const warningDiv = document.createElement('div');
-                                  warningDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                                  warningDiv.innerHTML = `
-                                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
-                                      <div class="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-4">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                      </div>
-                                      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تنبيه: لم يتم الدفع</h3>
-                                      <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع مستحقات العامل ${worker} البالغة ${share.toLocaleString('ar-IQ')} د.ع</p>
-                                      <button id="warning-close" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
-                                        حسناً
-                                      </button>
-                                    </div>
-                                  `;
-                                  
+                                  // إزالة النافذة المنبثقة
                                   document.body.removeChild(modalDiv);
-                                  document.body.appendChild(warningDiv);
+                                  
+                                  // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
+                                  setPaymentAction({
+                                    type: 'none',
+                                    worker,
+                                    share
+                                  });
+                                  setShowPasswordConfirm(true);
                                   
                                   // تحديث حالة الدفع في DOM
                                   const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
@@ -1478,4 +1598,16 @@ export function Analytics() {
       </div>
     </div>
   );
+  
+  {/* مكون التحقق من كلمة المرور */}
+  {showPasswordConfirm && (
+    <PasswordConfirm
+      onConfirm={executePaymentAction}
+      onCancel={() => {
+        setShowPasswordConfirm(false);
+        setPaymentAction(null);
+      }}
+      actionType="payment"
+    />
+  )}
 }

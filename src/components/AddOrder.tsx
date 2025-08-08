@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Plus, X, Users, Percent, Calculator, AlertCircle, Star, Camera, Printer, Megaphone, Palette, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { Order } from '../types';
+import { PasswordConfirm } from './PasswordConfirm';
 
 export function AddOrder() {
   const { addOrder, isOnline, isSyncing } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [formData, setFormData] = useState({
     customerName: '',
     orderDetails: '',
@@ -141,13 +143,22 @@ export function AddOrder() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // التحقق من الاتصال بالإنترنت أولاً
+    if (!isOnline) {
+      alert('لا يمكن إضافة طلب جديد بدون اتصال بالإنترنت');
+      return;
+    }
+    
+    // عرض نافذة التحقق من كلمة المرور
+    setShowPasswordConfirm(true);
+  };
+  
+  // دالة تنفيذ إضافة الطلب بعد التحقق من كلمة المرور
+  const executeAddOrder = async () => {
     setIsSubmitting(true);
     
     try {
-      if (!isOnline) {
-        throw new Error('لا يمكن إضافة طلب جديد بدون اتصال بالإنترنت');
-      }
-      
       // إنشاء كائن الطلب الجديد (بدون معرف، سيتم إنشاؤه بواسطة Firebase)
       const newOrderData: Omit<Order, 'id'> = {
         customerName: formData.customerName,
@@ -223,6 +234,16 @@ export function AddOrder() {
 
   return (
     <div className="p-4 pb-20 animate-fade-in">
+      {showPasswordConfirm && (
+        <PasswordConfirm 
+          onConfirm={() => {
+            setShowPasswordConfirm(false);
+            executeAddOrder();
+          }} 
+          onCancel={() => setShowPasswordConfirm(false)}
+          actionType="add"
+        />
+      )}
       <div className="max-w-2xl mx-auto animate-slide-up">
         <div className="text-center mb-6">
           <div className="w-16 h-16 mx-auto mb-4 animate-bounce-in">
