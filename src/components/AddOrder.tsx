@@ -4,7 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { Order } from '../types';
 
 export function AddOrder() {
-  const { orders, setOrders, isOnline, isSyncing } = useApp();
+  const { addOrder, isOnline, isSyncing } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     customerName: '',
@@ -139,59 +139,65 @@ export function AddOrder() {
 
   const totals = calculateTotals();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    const newOrder: Order = {
-      id: Date.now().toString(),
-      customerName: formData.customerName,
-      orderDetails: formData.orderDetails,
-      price: parseFloat(formData.price) || 0,
-      quantity: parseInt(formData.quantity) || 1,
-      workers: formData.workers.filter(w => w.name.trim()),
-      discount: parseFloat(formData.discount) || 0,
-      discountType: formData.discountType,
-      tax: parseFloat(formData.tax) || 0,
-      notes: formData.notes,
-      priority: formData.priority,
-      status: formData.status,
-      date: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      serviceType: formData.serviceType,
-      // خدمة الترويج
-      promotionAmountUSD: parseFloat(formData.promotionAmountUSD) || 0,
-      promotionAmount: parseFloat(formData.promotionAmount) || 0,
-      promotionCurrency: formData.promotionCurrency,
-      promotionProfit: parseFloat(formData.promotionCommission) || 0, // الربح يساوي العمولة
-      promotionCommission: parseFloat(formData.promotionCommission) || 0,
-      promotionAmountReceived: formData.promotionAmountReceived,
-      promotionAmountReceivedPercentage: formData.promotionAmountReceived === 'partial' ? parseFloat(formData.promotionAmountReceivedPercentage) || 0 : 0,
-      // خدمة التصميم
-      designTypes: formData.designTypes,
-      // خدمة التصوير
-      photographyDetails: formData.photographyDetails,
-      photographyAmount: parseFloat(formData.photographyAmount) || 0,
-      photographerName: formData.photographerName,
-      photographerAmount: parseFloat(formData.photographerAmount) || 0,
-      // خدمة الطباعة
-      printingDetails: formData.printingDetails,
-      printingAmount: parseFloat(formData.printingAmount) || 0,
-      printingEmployeeName: formData.printingEmployeeName,
-      printingEmployeeAmount: parseFloat(formData.printingEmployeeAmount) || 0,
-    };
-
     try {
-      setOrders(prev => [newOrder, ...prev]);
+      if (!isOnline) {
+        throw new Error('لا يمكن إضافة طلب جديد بدون اتصال بالإنترنت');
+      }
+      
+      // إنشاء كائن الطلب الجديد (بدون معرف، سيتم إنشاؤه بواسطة Firebase)
+      const newOrderData: Omit<Order, 'id'> = {
+        customerName: formData.customerName,
+        orderDetails: formData.orderDetails,
+        price: parseFloat(formData.price) || 0,
+        quantity: parseInt(formData.quantity) || 1,
+        workers: formData.workers.filter(w => w.name.trim()),
+        discount: parseFloat(formData.discount) || 0,
+        discountType: formData.discountType,
+        tax: parseFloat(formData.tax) || 0,
+        notes: formData.notes,
+        priority: formData.priority,
+        status: formData.status,
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        serviceType: formData.serviceType,
+        // خدمة الترويج
+        promotionAmountUSD: parseFloat(formData.promotionAmountUSD) || 0,
+        promotionAmount: parseFloat(formData.promotionAmount) || 0,
+        promotionCurrency: formData.promotionCurrency,
+        promotionProfit: parseFloat(formData.promotionCommission) || 0, // الربح يساوي العمولة
+        promotionCommission: parseFloat(formData.promotionCommission) || 0,
+        promotionAmountReceived: formData.promotionAmountReceived,
+        promotionAmountReceivedPercentage: formData.promotionAmountReceived === 'partial' ? parseFloat(formData.promotionAmountReceivedPercentage) || 0 : 0,
+        // خدمة التصميم
+        designTypes: formData.designTypes,
+        // خدمة التصوير
+        photographyDetails: formData.photographyDetails,
+        photographyAmount: parseFloat(formData.photographyAmount) || 0,
+        photographerName: formData.photographerName,
+        photographerAmount: parseFloat(formData.photographerAmount) || 0,
+        // خدمة الطباعة
+        printingDetails: formData.printingDetails,
+        printingAmount: parseFloat(formData.printingAmount) || 0,
+        printingEmployeeName: formData.printingEmployeeName,
+        printingEmployeeAmount: parseFloat(formData.printingEmployeeAmount) || 0,
+      };
+
+      // استخدام الدالة الجديدة لإضافة الطلب
+      const savedOrder = await addOrder(newOrderData);
+      console.log('تم إضافة الطلب بنجاح مع معرف:', savedOrder.id);
       
       // عرض رسالة نجاح
-      alert('تم إضافة الطلب بنجاح' + (isOnline ? ' وتمت مزامنته مع جميع المستخدمين' : ' محلياً فقط (أنت غير متصل بالإنترنت)'));
+      alert('تم إضافة الطلب بنجاح وتمت مزامنته مع جميع المستخدمين');
       
       // إعادة تعيين النموذج
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في إضافة الطلب:', error);
-      alert('حدث خطأ أثناء إضافة الطلب. يرجى المحاولة مرة أخرى.');
+      alert(`حدث خطأ أثناء إضافة الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`);
     } finally {
       setIsSubmitting(false);
     }

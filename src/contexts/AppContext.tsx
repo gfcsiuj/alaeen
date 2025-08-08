@@ -1,17 +1,17 @@
-import React, { createContext, useContext, ReactNode, useEffect } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { Order, Settings } from '../types';
-import { subscribeToOrders, saveOrder, deleteOrderFromDB, updateOrderInDB } from '../firebase/orderService';
+import { subscribeToOrders, saveOrder, deleteOrderFromDB, updateOrderInDB, addNewOrder, getOrderById } from '../firebase/orderService';
 
 interface AppContextType {
   orders: Order[];
   setOrders: (orders: Order[] | ((orders: Order[]) => Order[])) => void;
+  addOrder: (newOrder: Omit<Order, 'id'>) => Promise<Order>;
   settings: Settings;
   setSettings: (settings: Settings | ((settings: Settings) => Settings)) => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (authenticated: boolean) => void;
-  deleteOrder: (id: string) => void;
-  updateOrder: (updatedOrder: Order) => void;
+  deleteOrder: (id: string) => Promise<void>;
+  updateOrder: (updatedOrder: Order) => Promise<void>;
   isOnline: boolean; // حالة الاتصال بالإنترنت
   isSyncing: boolean; // حالة المزامنة مع Firebase
 }
@@ -19,14 +19,32 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [orders, setLocalOrders] = useLocalStorage<Order[]>('al-ain-orders', []);
-  const [settings, setSettings] = useLocalStorage<Settings>('al-ain-settings', {
+  // استخدام useState بدلاً من useLocalStorage
+  const [orders, setLocalOrders] = useState<Order[]>([]);
+  const [settings, setSettings] = useState<Settings>({
     theme: 'light',
     pinEnabled: false,
   });
-  const [isAuthenticated, setIsAuthenticated] = useLocalStorage<boolean>('al-ain-auth', true);
-  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
-  const [isSyncing, setIsSyncing] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  // استرجاع الإعدادات من localStorage عند بدء التطبيق
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem('al-ain-settings');
+      if (savedSettings) {
+        setSettings(JSON.parse(savedSettings));
+      }
+      
+      const savedAuth = localStorage.getItem('al-ain-auth');
+      if (savedAuth) {
+        setIsAuthenticated(JSON.parse(savedAuth));
+      }
+    } catch (error) {
+      console.error('خطأ في استرجاع الإعدادات من localStorage:', error);
+    }
+  }, []);
 
   // تتبع حالة الاتصال بالإنترنت
   useEffect(() => {
@@ -46,19 +64,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isOnline) {
       setIsSyncing(true);
+      console.log('جاري الاتصال بـ Firebase والاشتراك في التغييرات...');
+      
       const unsubscribe = subscribeToOrders((firebaseOrders) => {
-        console.log('تم استلام تحديث من Firebase:', firebaseOrders);
+        console.log('تم استلام تحديث من Firebase:', firebaseOrders.length, 'طلب');
         setLocalOrders(firebaseOrders);
         setIsSyncing(false);
       });
 
       return () => {
+        console.log('إلغاء الاشتراك في تغييرات Firebase');
         unsubscribe();
       };
+    } else {
+      console.log('غير متصل بالإنترنت، لا يمكن الاشتراك في تغييرات Firebase');
     }
   }, [isOnline]);
 
-  // دالة لتحديث الطلبات محلياً وفي Firebase
+  // حفظ الإعدادات في localStorage عند تغييرها
+  useEffect(() => {
+    try {
+      localStorage.setItem('al-ain-settings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('خطأ في حفظ الإعدادات في localStorage:', error);
+    }
+  }, [settings]);
+  
+  // حفظ حالة المصادقة في localStorage عند تغييرها
+  useEffect(() => {
+    try {
+      localStorage.setItem('al-ain-auth', JSON.stringify(isAuthenticated));
+    } catch (error) {
+      console.error('خطأ في حفظ حالة المصادقة في localStorage:', error);
+    }
+  }, [isAuthenticated]);
+  
+  // دالة لإضافة طلب جديد
+  const addOrder = async (newOrder: Omit<Order, 'id'>) => {
+    if (!isOnline) {
+      console.error('لا يمكن إضافة طلب جديد بدون اتصال بالإنترنت');
+      throw new Error('لا يمكن إضافة طلب جديد بدون اتصال بالإنترنت');
+    }
+    
+    try {
+      setIsSyncing(true);
+      const addedOrder = await addNewOrder(newOrder);
+      // لا نحتاج لتحديث الحالة محلياً لأن Firebase ستقوم بإرسال التحديث عبر الاشتراك
+      setIsSyncing(false);
+      return addedOrder;
+    } catch (error) {
+      setIsSyncing(false);
+      console.error('فشل في إضافة طلب جديد:', error);
+      throw error;
+    }
+  };
+  
+  // دالة لتحديث الطلبات (لن تستخدم عادة لأن Firebase تقوم بالمزامنة تلقائياً)
   const setOrders = (ordersOrUpdater: Order[] | ((prevOrders: Order[]) => Order[])) => {
     // تحديث محلي أولاً
     setLocalOrders(ordersOrUpdater);
@@ -70,29 +131,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
         : ordersOrUpdater;
         
       // مزامنة كل طلب مع Firebase
-      updatedOrders.forEach(order => {
-        saveOrder(order).catch(error => {
-          console.error('فشل في مزامنة الطلب مع Firebase:', error);
+      setIsSyncing(true);
+      Promise.all(updatedOrders.map(order => saveOrder(order)))
+        .then(() => {
+          console.log('تمت مزامنة جميع الطلبات مع Firebase');
+          setIsSyncing(false);
+        })
+        .catch(error => {
+          console.error('فشل في مزامنة الطلبات مع Firebase:', error);
+          setIsSyncing(false);
         });
-      });
     }
   };
 
-  const deleteOrder = (id: string) => {
-    // حذف محلي
-    setLocalOrders(prev => prev.filter(order => order.id !== id));
+  const deleteOrder = async (id: string) => {
+    if (!isOnline) {
+      console.error('لا يمكن حذف الطلب بدون اتصال بالإنترنت');
+      throw new Error('لا يمكن حذف الطلب بدون اتصال بالإنترنت');
+    }
     
-    // حذف من Firebase إذا كان متصلاً بالإنترنت
-    if (isOnline) {
-      deleteOrderFromDB(id).catch(error => {
-        console.error('فشل في حذف الطلب من Firebase:', error);
-      });
+    try {
+      setIsSyncing(true);
+      await deleteOrderFromDB(id);
+      // لا نحتاج لتحديث الحالة محلياً لأن Firebase ستقوم بإرسال التحديث عبر الاشتراك
+      setIsSyncing(false);
+    } catch (error) {
+      setIsSyncing(false);
+      console.error('فشل في حذف الطلب من Firebase:', error);
+      throw error;
     }
   };
 
-  const updateOrder = (updatedOrder: Order) => {
-    console.log('AppContext: updateOrder called with:', updatedOrder);
-    console.log('AppContext: Current orders before update:', orders);
+  const updateOrder = async (updatedOrder: Order) => {
+    console.log('AppContext: updateOrder called with:', updatedOrder.id);
+    
+    if (!isOnline) {
+      console.error('لا يمكن تحديث الطلب بدون اتصال بالإنترنت');
+      throw new Error('لا يمكن تحديث الطلب بدون اتصال بالإنترنت');
+    }
     
     try {
       // التحقق من وجود البيانات الأساسية
@@ -111,37 +187,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error('نوع الخدمة مفقود');
       }
       
-      // البحث عن الطلب المراد تحديثه
-      const orderExists = orders.some(order => order.id === updatedOrder.id);
-      if (!orderExists) {
-        console.error(`AppContext: Order with ID ${updatedOrder.id} not found`);
+      setIsSyncing(true);
+      
+      // التحقق من وجود الطلب في Firebase
+      const existingOrder = await getOrderById(updatedOrder.id);
+      if (!existingOrder) {
+        setIsSyncing(false);
+        console.error(`AppContext: Order with ID ${updatedOrder.id} not found in Firebase`);
         throw new Error(`الطلب برقم ${updatedOrder.id} غير موجود`);
       }
       
-      // العثور على الطلب الأصلي للمقارنة
-      const originalOrder = orders.find(order => order.id === updatedOrder.id);
-      console.log('AppContext: Original order:', originalOrder);
+      // تحديث الطلب في Firebase
+      await saveOrder(updatedOrder);
+      console.log('AppContext: Order updated successfully in Firebase');
       
-      // تحديث الطلب محلياً
-      setLocalOrders(prev => {
-        const newOrders = prev.map(order => 
-          order.id === updatedOrder.id ? updatedOrder : order
-        );
-        console.log('AppContext: Updated orders locally:', newOrders);
-        return newOrders;
-      });
-      
-      // تحديث الطلب في Firebase إذا كان متصلاً بالإنترنت
-      if (isOnline) {
-        saveOrder(updatedOrder).then(() => {
-          console.log('AppContext: Order updated successfully in Firebase');
-        }).catch(error => {
-          console.error('AppContext: Error updating order in Firebase:', error);
-        });
-      }
-      
-      console.log('AppContext: Order updated successfully');
+      // لا نحتاج لتحديث الحالة محلياً لأن Firebase ستقوم بإرسال التحديث عبر الاشتراك
+      setIsSyncing(false);
     } catch (error) {
+      setIsSyncing(false);
       console.error('AppContext: Error in updateOrder:', error);
       throw error; // إعادة رمي الخطأ ليتم التعامل معه في المكون
     }
@@ -152,6 +215,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         orders,
         setOrders,
+        addOrder, // إضافة دالة addOrder الجديدة
         settings,
         setSettings,
         isAuthenticated,

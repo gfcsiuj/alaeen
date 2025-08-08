@@ -311,7 +311,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     setTotals(calculateTotals());
   }, [formData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
@@ -450,21 +450,25 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
         }
       }
 
-      // محاولة تحديث الطلب
-      updateOrder(updatedOrder);
+      if (!isOnline) {
+        throw new Error('لا يمكن تحديث الطلب بدون اتصال بالإنترنت');
+      }
+
+      // محاولة تحديث الطلب (الآن أصبحت دالة متزامنة)
+      await updateOrder(updatedOrder);
       
       // تسجيل نجاح العملية
       console.log('Order updated successfully');
       
       // عرض رسالة نجاح للمستخدم
-      alert('تم تحديث الطلب بنجاح!' + (isOnline ? ' وتمت مزامنته مع جميع المستخدمين' : ' محلياً فقط (أنت غير متصل بالإنترنت)'));
+      alert('تم تحديث الطلب بنجاح وتمت مزامنته مع جميع المستخدمين');
       
       // إعادة تعيين النموذج إلى القيم المحدثة
       resetForm();
       
       // إغلاق النافذة
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       // تسجيل الخطأ بالتفصيل
       console.error('Error updating order:', error);
       
@@ -474,7 +478,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
       if (error instanceof Error) {
         errorMessage += error.message;
       } else {
-        errorMessage += 'خطأ غير معروف';
+        errorMessage += error.toString() || 'خطأ غير معروف';
       }
       
       alert(errorMessage + '\n\nيرجى التحقق من البيانات والمحاولة مرة أخرى. إذا استمرت المشكلة، حاول إعادة تحميل الصفحة.');

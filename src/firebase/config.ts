@@ -6,9 +6,9 @@ import { getAnalytics } from 'firebase/analytics';
 const firebaseConfig = {
   apiKey: "AIzaSyBRcnQjoWhXjVwmI1ZYsQS5VWSE_7_BEXs",
   authDomain: "aleayin-88731.firebaseapp.com",
-  databaseURL: "https://aleayin-88731-default-rtdb.firebaseio.com", // إضافة عنوان قاعدة البيانات في الوقت الفعلي
+  databaseURL: "https://aleayin-88731-default-rtdb.firebaseio.com",
   projectId: "aleayin-88731",
-  storageBucket: "aleayin-88731.firebasestorage.app",
+  storageBucket: "aleayin-88731.appspot.com",
   messagingSenderId: "994260785657",
   appId: "1:994260785657:web:b4d834f9037d8985360528",
   measurementId: "G-DZ4M525RX7"

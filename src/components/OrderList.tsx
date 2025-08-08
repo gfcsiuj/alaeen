@@ -231,7 +231,17 @@ export default function OrderList() {
                     <span className="text-sm">تعديل</span>
                   </button>
                   <button
-                    onClick={() => deleteOrder(order.id)}
+                    onClick={async () => {
+                      if (window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+                        try {
+                          await deleteOrder(order.id);
+                          alert('تم حذف الطلب بنجاح');
+                        } catch (error: any) {
+                          console.error('خطأ في حذف الطلب:', error);
+                          alert(`حدث خطأ أثناء حذف الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`);
+                        }
+                      }
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
                   >
                     <Trash2 className="w-4 h-4" />
