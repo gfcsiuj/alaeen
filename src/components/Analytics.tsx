@@ -25,7 +25,7 @@ export function Analytics() {
     if (!paymentAction) return;
     
     // إنشاء العناصر المطلوبة للعرض
-    let modalDiv, successDiv, warningDiv, amountDiv;
+    let successDiv, warningDiv;
     
     // تنفيذ الإجراء المناسب بناءً على نوع العملية
     if (paymentAction.worker) {
@@ -67,7 +67,7 @@ export function Analytics() {
         });
         
         document.getElementById('success-close')?.addEventListener('click', () => {
-          document.body.removeChild(successDiv);
+          document.body.removeChild(successDiv as Node);
         });
       } else if (type === 'partial' && paymentAction.amount) {
         // تسجيل دفع جزئي
@@ -106,7 +106,7 @@ export function Analytics() {
         });
         
         document.getElementById('success-close')?.addEventListener('click', () => {
-          document.body.removeChild(successDiv);
+          document.body.removeChild(successDiv as Node);
         });
       } else if (type === 'none') {
         // تسجيل عدم الدفع
@@ -142,7 +142,7 @@ export function Analytics() {
         });
         
         document.getElementById('warning-close')?.addEventListener('click', () => {
-          document.body.removeChild(warningDiv);
+          document.body.removeChild(warningDiv as Node);
         });
       }
     } else if (paymentAction.partner) {
@@ -184,7 +184,7 @@ export function Analytics() {
         });
         
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
-          document.body.removeChild(successDiv);
+          document.body.removeChild(successDiv as Node);
         });
       } else if (type === 'partial' && amount) {
         // تسجيل دفع جزئي للشريك
@@ -222,7 +222,7 @@ export function Analytics() {
         });
         
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
-          document.body.removeChild(successDiv);
+          document.body.removeChild(successDiv as Node);
         });
       }
     }
@@ -571,92 +571,92 @@ export function Analytics() {
                                 
                                 // حساب عدد العملاء الفريدين
                                 const uniqueCustomers = new Set(workerOrders.map(order => order.customerName)).size;
-                              
-                              // إنشاء محتوى تفاصيل الأعمال
-                              let orderDetailsHTML = '';
-                              
-                              workerOrders.forEach((order, index) => {
-                                const workerInfo = order.workers.find(w => w.name === worker);
-                                if (workerInfo) {
-                                  orderDetailsHTML += `
-                                    <div class="border-b border-gray-200 dark:border-gray-700 py-3 ${index === 0 ? 'pt-0' : ''}">
-                                      <div class="flex justify-between items-center mb-2">
-                                        <h5 class="font-bold text-gray-900 dark:text-white">${order.customerName}</h5>
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">${new Date(order.date).toLocaleDateString('ar-IQ')}</span>
+                               
+                               // إنشاء محتوى تفاصيل الأعمال
+                                let orderDetailsHTML = '';
+                                
+                                workerOrders.forEach((order, index) => {
+                                  const workerInfo = order.workers.find(w => w.name === worker);
+                                  if (workerInfo) {
+                                    orderDetailsHTML += `
+                                      <div class="border-b border-gray-200 dark:border-gray-700 py-3 ${index === 0 ? 'pt-0' : ''}">
+                                        <div class="flex justify-between items-center mb-2">
+                                          <h5 class="font-bold text-gray-900 dark:text-white">${order.customerName}</h5>
+                                          <span class="text-sm text-gray-500 dark:text-gray-400">${new Date(order.date).toLocaleDateString('ar-IQ')}</span>
+                                        </div>
+                                        <p class="text-gray-700 dark:text-gray-300 mb-2">${order.orderDetails}</p>
+                                        <div class="flex justify-between">
+                                          <span class="text-sm text-gray-600 dark:text-gray-400">نوع العمل: ${workerInfo.workType || 'غير محدد'}</span>
+                                          <span class="font-bold text-primary-600 dark:text-primary-400">${workerInfo.share.toLocaleString('ar-IQ')} د.ع</span>
+                                        </div>
                                       </div>
-                                      <p class="text-gray-700 dark:text-gray-300 mb-2">${order.orderDetails}</p>
-                                      <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">نوع العمل: ${workerInfo.workType || 'غير محدد'}</span>
-                                        <span class="font-bold text-primary-600 dark:text-primary-400">${workerInfo.share.toLocaleString('ar-IQ')} د.ع</span>
+                                    `;
+                                  }
+                                });
+                                
+                               // محتوى النافذة المنبثقة
+                                modalDiv.innerHTML = `
+                                  <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up max-h-[90vh] overflow-y-auto">
+                                    <div class="flex justify-between items-center mb-6">
+                                      <h3 class="text-xl font-bold text-gray-900 dark:text-white">تفاصيل عمل ${worker}</h3>
+                                      <button id="close-details-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                    
+                                    <div class="flex items-center mb-6">
+                                      <div class="w-16 h-16 bg-gradient-to-r ${colorClass} rounded-full flex items-center justify-center text-white text-2xl font-bold ml-4">
+                                        ${worker.charAt(0)}
+                                      </div>
+                                      <div>
+                                        <h4 class="text-lg font-bold text-gray-900 dark:text-white">${worker}</h4>
+                                        <p class="text-gray-600 dark:text-gray-400">إجمالي الحصة: ${share.toLocaleString('ar-IQ')} د.ع</p>
                                       </div>
                                     </div>
-                                  `;
-                                }
-                              });
-                              
-                              // محتوى النافذة المنبثقة
-                              modalDiv.innerHTML = `
-                                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up max-h-[90vh] overflow-y-auto">
-                                  <div class="flex justify-between items-center mb-6">
-                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">تفاصيل عمل ${worker}</h3>
-                                    <button id="close-details-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                  
-                                  <div class="flex items-center mb-6">
-                                    <div class="w-16 h-16 bg-gradient-to-r ${colorClass} rounded-full flex items-center justify-center text-white text-2xl font-bold ml-4">
-                                      ${worker.charAt(0)}
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                      <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 text-center">
+                                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">${orderCount}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">عدد الأعمال</p>
+                                      </div>
+                                      <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 text-center">
+                                        <p class="text-2xl font-bold text-green-600 dark:text-green-400">${uniqueCustomers}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">عدد العملاء</p>
+                                      </div>
+                                      <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 text-center">
+                                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">${percentage.toFixed(1)}%</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">نسبة من الإجمالي</p>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <h4 class="text-lg font-bold text-gray-900 dark:text-white">${worker}</h4>
-                                      <p class="text-gray-600 dark:text-gray-400">إجمالي الحصة: ${share.toLocaleString('ar-IQ')} د.ع</p>
+                                    
+                                    <h4 class="font-bold text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">تفاصيل الأعمال</h4>
+                                    <div class="space-y-2">
+                                      ${orderDetailsHTML || '<p class="text-center text-gray-500 dark:text-gray-400 py-4">لا توجد تفاصيل أعمال متاحة</p>'}
                                     </div>
                                   </div>
-                                  
-                                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                    <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 text-center">
-                                      <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">${orderCount}</p>
-                                      <p class="text-sm text-gray-600 dark:text-gray-400">عدد الأعمال</p>
-                                    </div>
-                                    <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 text-center">
-                                      <p class="text-2xl font-bold text-green-600 dark:text-green-400">${uniqueCustomers}</p>
-                                      <p class="text-sm text-gray-600 dark:text-gray-400">عدد العملاء</p>
-                                    </div>
-                                    <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 text-center">
-                                      <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">${percentage.toFixed(1)}%</p>
-                                      <p class="text-sm text-gray-600 dark:text-gray-400">نسبة من الإجمالي</p>
-                                    </div>
-                                  </div>
-                                  
-                                  <h4 class="font-bold text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">تفاصيل الأعمال</h4>
-                                  <div class="space-y-2">
-                                    ${orderDetailsHTML || '<p class="text-center text-gray-500 dark:text-gray-400 py-4">لا توجد تفاصيل أعمال متاحة</p>'}
-                                  </div>
-                                </div>
-                              `;
-                              
-                              // إضافة النافذة المنبثقة إلى الصفحة
-                              document.body.appendChild(modalDiv);
-                              
-                              // إضافة مستمع الحدث لزر الإغلاق
-                              document.getElementById('close-details-modal')?.addEventListener('click', () => {
-                                document.body.removeChild(modalDiv);
-                              });
-                              
-                              // إغلاق النافذة عند النقر خارجها
-                              modalDiv.addEventListener('click', (e) => {
-                                if (e.target === modalDiv) {
+                                `;
+                                
+                                // إضافة النافذة المنبثقة إلى الصفحة
+                                document.body.appendChild(modalDiv);
+                                
+                                // إضافة مستمع الحدث لزر الإغلاق
+                                document.getElementById('close-details-modal')?.addEventListener('click', () => {
                                   document.body.removeChild(modalDiv);
-                                }
-                              });
-                            } catch (error) {
-                              console.error('حدث خطأ في عرض تفاصيل العمال:', error);
-                              alert('حدث خطأ في عرض تفاصيل العمال. يرجى المحاولة مرة أخرى.');
-                            }
-                          }}
+                                });
+                                
+                                // إغلاق النافذة عند النقر خارجها
+                                modalDiv.addEventListener('click', (e) => {
+                                  if (e.target === modalDiv) {
+                                    document.body.removeChild(modalDiv);
+                                  }
+                                });
+                              } catch (error) {
+                                console.error('حدث خطأ في عرض تفاصيل العمال:', error);
+                                alert('حدث خطأ في عرض تفاصيل العمال. يرجى المحاولة مرة أخرى.');
+                              }
+                            }}
                           >
                             تفاصيل العمل
                           </button>
@@ -1062,7 +1062,7 @@ export function Analytics() {
                     document.getElementById('cancel-partial-partner1')?.addEventListener('click', () => {
                       document.body.removeChild(amountDiv);
                     });
-                  
+                   
                   // إضافة وظيفة عدم الدفع للشريك
                   document.getElementById('pay-none-partner1')?.addEventListener('click', () => {
                     // إظهار رسالة تنبيه
@@ -1101,7 +1101,7 @@ export function Analytics() {
                     document.getElementById('warning-close-partner1')?.addEventListener('click', () => {
                       document.body.removeChild(warningDiv);
                     });
-                  
+                    
                   document.getElementById('close-modal-partner1')?.addEventListener('click', () => {
                     document.body.removeChild(modalDiv);
                   });
