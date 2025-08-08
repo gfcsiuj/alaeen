@@ -4,7 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { PasswordConfirm } from './PasswordConfirm';
 
 export function Settings() {
-  const { settings, setSettings, orders, setOrders, setIsAuthenticated } = useApp();
+  const { settings, setSettings, orders, setOrders, setIsAuthenticated, userRole, logout } = useApp();
   const [showPinInput, setShowPinInput] = useState(false);
   const [newPin, setNewPin] = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -86,9 +86,7 @@ export function Settings() {
     setShowPasswordConfirm(false);
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-  };
+  // استخدام دالة تسجيل الخروج من AppContext بدلاً من الدالة المحلية
 
   return (
     <div className="p-4 pb-20">
@@ -231,62 +229,63 @@ export function Settings() {
                 </div>
               )}
 
-              {settings.pinEnabled && (
-                <button
-                  onClick={logout}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg"
-                >
-                  <Shield className="w-5 h-5 ml-2" />
-                  تسجيل الخروج
-                </button>
-              )}
+              {/* زر تسجيل الخروج - يظهر دائماً */}
+              <button
+                onClick={logout}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg"
+              >
+                <Shield className="w-5 h-5 ml-2" />
+                تسجيل الخروج
+              </button>
             </div>
           </div>
 
-          {/* Data Management */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-              <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center ml-3">
-                <Download className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              إدارة البيانات
-            </h2>
-            
-            <div className="space-y-4">
-              <button
-                onClick={exportData}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg"
-              >
-                <Download className="w-5 h-5 ml-2" />
-                تصدير البيانات
-              </button>
+          {/* Data Management - يظهر فقط للمدير */}
+          {userRole === 'admin' && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center ml-3">
+                  <Download className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                إدارة البيانات
+              </h2>
               
-              <div>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importData}
-                  className="hidden"
-                  id="import-file"
-                />
-                <label
-                  htmlFor="import-file"
-                  className="w-full bg-gradient-to-r from-primary-500 to-blue-500 hover:from-primary-600 hover:to-blue-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center cursor-pointer shadow-lg"
+              <div className="space-y-4">
+                <button
+                  onClick={exportData}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg"
                 >
-                  <Upload className="w-5 h-5 ml-2" />
-                  استيراد البيانات
-                </label>
+                  <Download className="w-5 h-5 ml-2" />
+                  تصدير البيانات
+                </button>
+                
+                <div>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importData}
+                    className="hidden"
+                    id="import-file"
+                  />
+                  <label
+                    htmlFor="import-file"
+                    className="w-full bg-gradient-to-r from-primary-500 to-blue-500 hover:from-primary-600 hover:to-blue-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center cursor-pointer shadow-lg"
+                  >
+                    <Upload className="w-5 h-5 ml-2" />
+                    استيراد البيانات
+                  </label>
+                </div>
+                
+                <button
+                  onClick={clearAllData}
+                  className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg"
+                >
+                  <Trash2 className="w-5 h-5 ml-2" />
+                  حذف جميع البيانات
+                </button>
               </div>
-              
-              <button
-                onClick={clearAllData}
-                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg"
-              >
-                <Trash2 className="w-5 h-5 ml-2" />
-                حذف جميع البيانات
-              </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

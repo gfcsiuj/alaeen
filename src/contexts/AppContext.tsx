@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
 import { Order, Settings } from '../types';
 import { subscribeToOrders, saveOrder, deleteOrderFromDB, updateOrderInDB, addNewOrder, getOrderById } from '../firebase/orderService';
+import { getAuth, signOut } from 'firebase/auth';
 
 interface AppContextType {
   orders: Order[];
@@ -10,6 +11,9 @@ interface AppContextType {
   setSettings: (settings: Settings | ((settings: Settings) => Settings)) => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (authenticated: boolean) => void;
+  userRole: 'admin' | 'viewer' | null;
+  setUserRole: (role: 'admin' | 'viewer' | null) => void;
+  logout: () => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
   updateOrder: (updatedOrder: Order) => Promise<void>;
   isOnline: boolean; // حالة الاتصال بالإنترنت
@@ -25,7 +29,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     theme: 'light',
     pinEnabled: false,
   });
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<'admin' | 'viewer' | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   
@@ -40,6 +45,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const savedAuth = localStorage.getItem('al-ain-auth');
       if (savedAuth) {
         setIsAuthenticated(JSON.parse(savedAuth));
+      }
+      
+      const savedRole = localStorage.getItem('al-ain-role');
+      if (savedRole) {
+        setUserRole(JSON.parse(savedRole));
       }
     } catch (error) {
       console.error('خطأ في استرجاع الإعدادات من localStorage:', error);
@@ -141,6 +151,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('خطأ في حفظ حالة المصادقة في localStorage:', error);
     }
   }, [isAuthenticated]);
+  
+  // حفظ دور المستخدم في localStorage عند تغييره
+  useEffect(() => {
+    try {
+      localStorage.setItem('al-ain-role', JSON.stringify(userRole));
+    } catch (error) {
+      console.error('خطأ في حفظ دور المستخدم في localStorage:', error);
+    }
+  }, [userRole]);
+  
+  // دالة لتسجيل الخروج
+  const logout = async () => {
+    try {
+      const auth = getAuth();
+      await signOut(auth);
+      setIsAuthenticated(false);
+      setUserRole(null);
+    } catch (error) {
+      console.error('خطأ في تسجيل الخروج:', error);
+      throw error;
+    }
+  };
   
   // دالة لإضافة طلب جديد
   const addOrder = async (newOrder: Omit<Order, 'id'>) => {
@@ -412,11 +444,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         orders,
         setOrders,
-        addOrder, // إضافة دالة addOrder الجديدة
+        addOrder,
         settings,
         setSettings,
         isAuthenticated,
         setIsAuthenticated,
+        userRole,
+        setUserRole,
+        logout,
         deleteOrder,
         updateOrder,
         isOnline,

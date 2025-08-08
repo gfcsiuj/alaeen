@@ -1005,7 +1005,6 @@ export function Analytics() {
                     setShowPasswordConfirm(true);
                     
                   });
-                  });
                   
                   // إضافة وظيفة الدفع الجزئي للشريك
                   document.getElementById('pay-partial-partner1')?.addEventListener('click', () => {
@@ -1063,7 +1062,6 @@ export function Analytics() {
                     document.getElementById('cancel-partial-partner1')?.addEventListener('click', () => {
                       document.body.removeChild(amountDiv);
                     });
-                  });
                   
                   // إضافة وظيفة عدم الدفع للشريك
                   document.getElementById('pay-none-partner1')?.addEventListener('click', () => {
@@ -1103,19 +1101,27 @@ export function Analytics() {
                     document.getElementById('warning-close-partner1')?.addEventListener('click', () => {
                       document.body.removeChild(warningDiv);
                     });
-                  });
                   
                   document.getElementById('close-modal-partner1')?.addEventListener('click', () => {
                     document.body.removeChild(modalDiv);
                   });
+                });
+              }}
+            >
+              <button 
+                className="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold"
+                onClick={() => {
+                  // إظهار النافذة المنبثقة لتسجيل الدفع
+                  const modalDiv = document.createElement('div');
+                  modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                  document.body.appendChild(modalDiv);
                 }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                تسجيل الدفع
+                {`تسجيل الدفع`}
               </button>
-            </div>
             
             {/* Partner 2: عياش */}
             <div className="bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-xl p-5 border border-green-100 dark:border-green-900/30 shadow-sm">
@@ -1194,7 +1200,6 @@ export function Analytics() {
                     setShowPasswordConfirm(true);
                     
                   });
-                  });
                   
                   // إضافة وظيفة الدفع الجزئي للشريك
                   document.getElementById('pay-partial-partner2')?.addEventListener('click', () => {
@@ -1246,9 +1251,6 @@ export function Analytics() {
                         amount
                       });
                       setShowPasswordConfirm(true);
-                    });
-                      
-
                     });
                     
                     document.getElementById('cancel-partial-partner2')?.addEventListener('click', () => {
@@ -1535,6 +1537,7 @@ export function Analytics() {
         setPaymentAction(null);
       }}
       actionType="payment"
-    />
+    />  
   )}
+</div>
 }

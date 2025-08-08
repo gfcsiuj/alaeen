@@ -6,7 +6,7 @@ import { Order } from '../types';
 import { PasswordConfirm } from './PasswordConfirm';
 
 export default function OrderList() {
-  const { orders, deleteOrder } = useApp();
+  const { orders, deleteOrder, userRole } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -232,35 +232,41 @@ export default function OrderList() {
                     <Eye className="w-4 h-4" />
                     <span className="text-sm">عرض</span>
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Edit button clicked, order:', order);
-                      console.log('Order ID:', order.id);
-                      console.log('Order data type check:', typeof order);
-                      // Create a deep copy of the order to avoid reference issues
-                      const orderCopy = JSON.parse(JSON.stringify(order));
-                      console.log('Order copy created:', orderCopy);
-                      setOrderToEdit(orderCopy);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    <span className="text-sm">تعديل</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
-                        setOrderToDelete(order.id);
-                        setShowPasswordConfirm(true);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="text-sm">حذف</span>
-                  </button>
+                  
+                  {/* عرض أزرار التعديل والحذف فقط للمدير */}
+                  {userRole === 'admin' && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Edit button clicked, order:', order);
+                          console.log('Order ID:', order.id);
+                          console.log('Order data type check:', typeof order);
+                          // Create a deep copy of the order to avoid reference issues
+                          const orderCopy = JSON.parse(JSON.stringify(order));
+                          console.log('Order copy created:', orderCopy);
+                          setOrderToEdit(orderCopy);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        <span className="text-sm">تعديل</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+                            setOrderToDelete(order.id);
+                            setShowPasswordConfirm(true);
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="text-sm">حذف</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

@@ -6,10 +6,11 @@ import OrderList from './components/OrderList';
 import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
 import { PinLogin } from './components/PinLogin';
+import { LoginScreen } from './components/LoginScreen';
 import { Loader } from './components/Loader';
 
 function AppContent() {
-  const { settings, isAuthenticated } = useApp();
+  const { settings, isAuthenticated, userRole } = useApp();
   const [activeTab, setActiveTab] = useState('analytics');
   const [loading, setLoading] = useState(true);
 
@@ -36,15 +37,16 @@ function AppContent() {
     return <Loader />;
   }
   
-  // Show PIN login if PIN is enabled and user is not authenticated
-  if (settings.pinEnabled && !isAuthenticated) {
-    return <PinLogin />;
+  // إذا لم يكن المستخدم مصادقاً، عرض شاشة تسجيل الدخول
+  if (!isAuthenticated) {
+    return <LoginScreen />;
   }
 
   const renderContent = () => {
     switch (activeTab) {
       case 'add':
-        return <AddOrder />;
+        // عرض مكون إضافة طلب فقط للمدير
+        return userRole === 'admin' ? <AddOrder /> : <Analytics />;
       case 'orders':
         return <OrderList />;
       case 'analytics':
