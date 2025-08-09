@@ -2,11 +2,15 @@ import React, { createContext, useContext, ReactNode, useEffect, useState } from
 import { Order, Settings } from '../types';
 import { subscribeToOrders, saveOrder, deleteOrderFromDB, updateOrderInDB, addNewOrder, getOrderById } from '../firebase/orderService';
 import { getAuth, signOut } from 'firebase/auth';
+import { Payment, getAllPayments } from '../firebase/paymentService';
 
 interface AppContextType {
   orders: Order[];
   setOrders: (orders: Order[] | ((orders: Order[]) => Order[])) => void;
   addOrder: (newOrder: Omit<Order, 'id'>) => Promise<Order>;
+  payments: Payment[];
+  setPayments: (payments: Payment[] | ((payments: Payment[]) => Payment[])) => void;
+  refreshPayments: () => Promise<void>;
   settings: Settings;
   setSettings: (settings: Settings | ((settings: Settings) => Settings)) => void;
   isAuthenticated: boolean;
@@ -25,6 +29,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   // استخدام useState بدلاً من useLocalStorage
   const [orders, setLocalOrders] = useState<Order[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [settings, setSettings] = useState<Settings>({
     theme: 'light',
     pinEnabled: false,
@@ -69,6 +74,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // تحميل المدفوعات عند بدء التطبيق
+  useEffect(() => {
+    if (isAuthenticated && userRole) {
+      refreshPayments().catch(error => {
+        console.error('فشل في تحميل المدفوعات عند بدء التطبيق:', error);
+      });
+    }
+  }, [isAuthenticated, userRole]);
 
   // الاشتراك في التغييرات من Firebase مع آلية إعادة المحاولة
   useEffect(() => {
@@ -161,6 +175,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [userRole]);
   
+  // تحديث المدفوعات من Firebase
+  const refreshPayments = async () => {
+    try {
+      setIsSyncing(true);
+      const paymentsData = await getAllPayments();
+      setPayments(paymentsData);
+      return paymentsData;
+    } catch (error) {
+      console.error('خطأ في تحديث المدفوعات:', error);
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // دالة لتسجيل الخروج
   const logout = async () => {
     try {
@@ -445,6 +474,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         orders,
         setOrders,
         addOrder,
+        payments,
+        setPayments,
+        refreshPayments,
         settings,
         setSettings,
         isAuthenticated,

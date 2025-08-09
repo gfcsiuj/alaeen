@@ -4,7 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { getAllPayments, getPaymentsByTimeFilter, deletePayment, Payment } from '../firebase/paymentService';
 
 export function PaymentHistory() {
-  const { userRole } = useApp();
+  const { userRole, payments: appPayments, refreshPayments } = useApp();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +25,11 @@ export function PaymentHistory() {
     const fetchPayments = async () => {
       try {
         setLoading(true);
-        const paymentsData = await getPaymentsByTimeFilter(timeFilter, customDays);
-        setPayments(paymentsData);
+        // استخدام refreshPayments لتحديث المدفوعات في AppContext
+        await refreshPayments();
+        // تطبيق الفلتر الزمني على المدفوعات
+        const filteredPayments = await getPaymentsByTimeFilter(timeFilter, customDays);
+        setPayments(filteredPayments);
         setError(null);
       } catch (err) {
         console.error('خطأ في جلب المدفوعات:', err);
@@ -37,7 +40,7 @@ export function PaymentHistory() {
     };
     
     fetchPayments();
-  }, [timeFilter, customDays]);
+  }, [timeFilter, customDays, refreshPayments]);
   
   // تطبيق الفلاتر والترتيب
   const filteredPayments = payments
@@ -127,8 +130,12 @@ export function PaymentHistory() {
       
       await deletePayment(paymentId);
       
-      // تحديث قائمة المدفوعات بعد الحذف
-      setPayments(prevPayments => prevPayments.filter(payment => payment.id !== paymentId));
+      // تحديث المدفوعات من Firebase
+      await refreshPayments();
+      
+      // تحديث قائمة المدفوعات المعروضة
+      const filteredPayments = await getPaymentsByTimeFilter(timeFilter, customDays);
+      setPayments(filteredPayments);
       
       // إنشاء مودال نجاح
       const successModal = document.createElement('div');

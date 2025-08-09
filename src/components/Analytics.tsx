@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingUp, Users, DollarSign, Calendar, Filter, PieChart, BarChart3, Target, ClipboardList } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { PasswordConfirm } from './PasswordConfirm';
-import { addPayment } from '../firebase/paymentService';
+import { addPayment, Payment } from '../firebase/paymentService';
 import { useNavigate } from 'react-router-dom';
 
 export function Analytics() {
-  const { orders, userRole } = useApp();
+  const { orders, userRole, refreshPayments } = useApp();
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState('all');
   const [customDays, setCustomDays] = useState('7');
@@ -81,6 +81,9 @@ export function Analytics() {
           date: new Date().toISOString(),
           createdAt: new Date().toISOString(),
           createdBy: userRole
+        }, (newPayment) => {
+          // تحديث المدفوعات في الذاكرة
+          console.log('تم تحديث المدفوعات في الذاكرة:', newPayment);
         });
 
         if (type === 'full') {
@@ -211,6 +214,9 @@ export function Analytics() {
         date: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         createdBy: userRole
+      }, (newPayment) => {
+        // تحديث المدفوعات في الذاكرة
+        console.log('تم تحديث المدفوعات في الذاكرة:', newPayment);
       });
 
       if (type === 'full') {
@@ -295,6 +301,9 @@ export function Analytics() {
       }
     }
 
+    // تحديث المدفوعات من Firebase
+    await refreshPayments();
+    
     // إعادة تعيين حالة الإجراء
     setPaymentAction(null);
     setShowPasswordConfirm(false);

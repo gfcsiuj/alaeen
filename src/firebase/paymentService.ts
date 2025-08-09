@@ -26,9 +26,10 @@ const getPaymentsRef = () => {
 /**
  * إضافة دفعة جديدة
  * @param payment بيانات الدفعة
+ * @param updateContext دالة لتحديث سياق التطبيق (اختياري)
  * @returns وعد يتم حله مع معرف الدفعة الجديدة
  */
-export const addPayment = async (payment: Omit<Payment, 'id'>): Promise<string> => {
+export const addPayment = async (payment: Omit<Payment, 'id'>, updateContext?: (payment: Payment) => void): Promise<string> => {
   console.log('بدء إضافة دفعة جديدة في Firebase');
   
   try {
@@ -67,6 +68,12 @@ export const addPayment = async (payment: Omit<Payment, 'id'>): Promise<string> 
       try {
         await Promise.race([savePromise, saveTimeoutPromise]);
         console.log(`تم حفظ الدفعة الجديدة بنجاح بعد ${attempts + 1} محاولة`);
+        
+        // تحديث السياق إذا تم تمرير دالة التحديث
+        if (updateContext) {
+          updateContext(newPayment);
+        }
+        
         return paymentId;
       } catch (error) {
         attempts++;
