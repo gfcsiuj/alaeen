@@ -310,13 +310,14 @@ export function Settings() {
       </div>
     </div>
   );
-  
-  {/* مكون التحقق من كلمة المرور */}
-  {showPasswordConfirm && (
-    <PasswordConfirm
-      onConfirm={executeDataDelete}
-      onCancel={() => setShowPasswordConfirm(false)}
-      actionType="deleteData"
-    />
-  )}
+}
+
+{/* مكون التحقق من كلمة المرور */}
+{showPasswordConfirm && (
+<PasswordConfirm
+onConfirm={executeDataDelete}
+onCancel={() => setShowPasswordConfirm(false)}
+actionType="deleteData"
+/>
+)}
 }
