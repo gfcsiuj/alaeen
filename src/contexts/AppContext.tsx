@@ -325,8 +325,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       
       console.log('تم إضافة الطلب بنجاح مع المعرف:', addedOrder.id);
-      // إضافة الطلب محلياً للتحديث الفوري
-      setLocalOrders(prevOrders => [addedOrder, ...prevOrders]);
+      // Let the real-time listener handle the update to prevent duplicates
+      // setLocalOrders(prevOrders => [addedOrder, ...prevOrders]);
       setIsSyncing(false);
       return addedOrder;
     } catch (error) {

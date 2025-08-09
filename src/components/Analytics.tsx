@@ -152,8 +152,8 @@ export function Analytics() {
 
     const workerShares: Record<string, number> = {};
     const totalWorkerShares = filteredOrders.reduce((sum, order) => {
-      const orderTotal = order.workers.reduce((workerSum, worker) => workerSum + worker.share, 0);
-      order.workers.forEach(worker => {
+      const orderTotal = (order.workers || []).reduce((workerSum, worker) => workerSum + worker.share, 0);
+      (order.workers || []).forEach(worker => {
         if (worker.name.trim()) {
           workerShares[worker.name] = (workerShares[worker.name] || 0) + worker.share;
         }
