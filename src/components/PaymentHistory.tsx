@@ -1,407 +1,144 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, DollarSign, Users, Filter, ArrowDownUp, Search, Trash2, AlertCircle } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { getAllPayments, getPaymentsByTimeFilter, deletePayment, Payment } from '../firebase/paymentService';
+import { deletePayment, Payment } from '../firebase/paymentService';
+
+// Reusable Modal Component
+const Modal = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl animate-fade-in" onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+};
 
 export function PaymentHistory() {
   const { userRole, payments: appPayments, refreshPayments } = useApp();
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [localPayments, setLocalPayments] = useState<Payment[]>(appPayments);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null); // معرف المدفوعة التي يتم حذفها حاليًا
-  const [deleteError, setDeleteError] = useState<string | null>(null); // رسالة خطأ الحذف
+  const [deleting, setDeleting] = useState<string | null>(null);
   
-  // فلاتر
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'worker' | 'partner'>('all');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'full' | 'partial' | 'none'>('all');
-  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
-  const [customDays, setCustomDays] = useState('7');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
-  // جلب المدفوعات من Firebase
+  // Modals state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [statusModal, setStatusModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
   useEffect(() => {
-    // تعريف متغير للتحكم في إلغاء العملية
-    let isMounted = true;
-    let isInitialLoad = true;
-    
-    const fetchPayments = async () => {
-      try {
-        if (!isMounted) return;
-        setLoading(true);
-        
-        // استخدام المدفوعات من AppContext مباشرة بدلاً من إعادة جلبها
-        if (appPayments && appPayments.length > 0) {
-          console.log(`تطبيق الفلتر على ${appPayments.length} دفعة من السياق`);
-          
-          // تطبيق الفلتر الزمني على المدفوعات المتاحة بالفعل
-          let filteredPayments = [...appPayments];
-          
-          // تطبيق الفلتر الزمني يدويًا بدلاً من استدعاء API
-          if (timeFilter !== 'all') {
-            const now = new Date();
-            let cutoffDate = new Date();
-            
-            if (timeFilter === 'today') {
-              cutoffDate.setHours(0, 0, 0, 0);
-            } else if (timeFilter === 'week') {
-              cutoffDate.setDate(now.getDate() - 7);
-            } else if (timeFilter === 'month') {
-              cutoffDate.setMonth(now.getMonth() - 1);
-            } else if (timeFilter === 'custom' && customDays) {
-              cutoffDate.setDate(now.getDate() - parseInt(customDays));
-            }
-            
-            filteredPayments = filteredPayments.filter(payment => 
-              new Date(payment.date) >= cutoffDate
-            );
-          }
-          
-          if (isMounted) {
-            setPayments(filteredPayments);
-            setError(null);
-          }
-        } else {
-          // إذا لم تكن المدفوعات متاحة في السياق، نقوم بجلبها مرة واحدة
-          if (isMounted && isInitialLoad) {
-            console.log('جلب المدفوعات من Firebase لأول مرة');
-            await refreshPayments();
-            isInitialLoad = false;
-          }
-        }
-      } catch (err) {
-        console.error('خطأ في جلب المدفوعات:', err);
-        if (isMounted) {
-          setError('حدث خطأ أثناء جلب سجل المدفوعات');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-    
-    fetchPayments();
-    
-    // تنظيف عند إلغاء تحميل المكون
-    return () => {
-      isMounted = false;
-    };
-  }, [appPayments, timeFilter, customDays]);
-  
-  // تحديث المدفوعات عند تغيير الفلاتر
-  useEffect(() => {
-    // تطبيق الفلاتر على المدفوعات الحالية
-    if (appPayments && appPayments.length > 0) {
-      console.log('تطبيق الفلاتر على المدفوعات');
-      
-      // تأخير قصير لتجنب التحديثات المتكررة
-      const filterTimer = setTimeout(() => {
-        let filtered = [...appPayments];
-        
-        // تطبيق فلتر النوع
-        if (typeFilter !== 'all') {
-          filtered = filtered.filter(payment => payment.type === typeFilter);
-        }
-        
-        // تطبيق فلتر نوع الدفع
-        if (paymentTypeFilter !== 'all') {
-          filtered = filtered.filter(payment => payment.paymentType === paymentTypeFilter);
-        }
-        
-        // تطبيق فلتر البحث
-        if (searchTerm.trim()) {
-          const searchLower = searchTerm.toLowerCase();
-          filtered = filtered.filter(payment => 
-            payment.recipientName.toLowerCase().includes(searchLower) ||
-            payment.type.toLowerCase().includes(searchLower) ||
-            payment.paymentType.toLowerCase().includes(searchLower)
-          );
-        }
-        
-        setPayments(filtered);
-      }, 300);
-      
-      return () => clearTimeout(filterTimer);
-    }
-  }, [appPayments, typeFilter, paymentTypeFilter, searchTerm]);
-  
-  // تطبيق الفلاتر والترتيب
-  const filteredPayments = payments
-    .filter(payment => {
-      // فلتر البحث
-      const searchMatch = payment.recipientName.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // فلتر النوع
-      const typeMatch = typeFilter === 'all' || payment.type === typeFilter;
-      
-      // فلتر نوع الدفع
-      const paymentTypeMatch = paymentTypeFilter === 'all' || payment.paymentType === paymentTypeFilter;
-      
-      return searchMatch && typeMatch && paymentTypeMatch;
-    })
-    .sort((a, b) => {
-      // ترتيب حسب التاريخ أو المبلغ
-      if (sortBy === 'date') {
-        return sortDirection === 'asc'
-          ? new Date(a.date).getTime() - new Date(b.date).getTime()
-          : new Date(b.date).getTime() - new Date(a.date).getTime();
-      } else {
-        return sortDirection === 'asc'
-          ? a.amount - b.amount
-          : b.amount - a.amount;
-      }
-    });
-  
-  // تبديل اتجاه الترتيب
-  const toggleSortDirection = () => {
-    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-  };
-  
-  // تنسيق التاريخ
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ar-IQ', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-  
-  // حذف مدفوعة
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // معرف المدفوعة المراد حذفها
+    setLocalPayments(appPayments);
+    setLoading(false);
+  }, [appPayments]);
   
   const handleDeletePayment = async (paymentId: string) => {
     if (!paymentId) return;
+    if (userRole === 'viewer') {
+      setStatusModal({ isOpen: true, title: 'غير مصرح', message: 'ليس لديك صلاحية لحذف المدفوعات.', type: 'error' });
+      setConfirmDeleteId(null);
+      return;
+    }
+
+    setDeleting(paymentId);
     
+    // Optimistic UI update
+    const originalPayments = [...localPayments];
+    setLocalPayments(prevPayments => prevPayments.filter(p => p.id !== paymentId));
+    setConfirmDeleteId(null);
+
     try {
-      setDeleting(paymentId);
-      setDeleteError(null);
-      
-      // التحقق من صلاحيات المستخدم
-      if (userRole === 'viewer') {
-        // إنشاء مودال تحذير
-        const warningModal = document.createElement('div');
-        warningModal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
-        warningModal.innerHTML = `
-          <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl animate-fade-in">
-            <div class="flex items-center text-red-500 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <h3 class="text-lg font-bold text-gray-900 dark:text-white">غير مصرح</h3>
-            </div>
-            <p class="text-gray-700 dark:text-gray-300 mb-6">ليس لديك صلاحية لحذف المدفوعات. يرجى التواصل مع المسؤول.</p>
-            <div class="flex justify-end">
-              <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" id="close-warning">إغلاق</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(warningModal);
-        
-        // إضافة مستمع حدث لزر الإغلاق
-        document.getElementById('close-warning')?.addEventListener('click', () => {
-          document.body.removeChild(warningModal);
-        });
-        
-        setDeleting(null);
-        return;
-      }
-      
       await deletePayment(paymentId);
-      
-      // إضافة تأخير قصير قبل تحديث المدفوعات لضمان اكتمال عملية الحذف
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // تحديث المدفوعات من Firebase
+      // Data is now deleted from Firebase. Refresh context state in the background.
       await refreshPayments();
-
-      // تأخير إضافي قبل تحديث القائمة المعروضة
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // تحديث قائمة المدفوعات المعروضة بناءً على المدفوعات المحدثة في السياق
-      if (appPayments && appPayments.length > 0) {
-        console.log('تطبيق الفلاتر بعد الحذف');
-        let filtered = [...appPayments];
-        
-        // تطبيق الفلتر الزمني
-        if (timeFilter !== 'all') {
-          const now = new Date();
-          let cutoffDate = new Date();
-          
-          if (timeFilter === 'today') {
-            cutoffDate.setHours(0, 0, 0, 0);
-          } else if (timeFilter === 'week') {
-            cutoffDate.setDate(now.getDate() - 7);
-          } else if (timeFilter === 'month') {
-            cutoffDate.setMonth(now.getMonth() - 1);
-          } else if (timeFilter === 'custom' && customDays) {
-            cutoffDate.setDate(now.getDate() - parseInt(customDays));
-          }
-          
-          filtered = filtered.filter(payment => 
-            new Date(payment.date) >= cutoffDate
-          );
-        }
-        
-        // تطبيق فلتر النوع
-        if (typeFilter !== 'all') {
-          filtered = filtered.filter(payment => payment.type === typeFilter);
-        }
-        
-        // تطبيق فلتر نوع الدفع
-        if (paymentTypeFilter !== 'all') {
-          filtered = filtered.filter(payment => payment.paymentType === paymentTypeFilter);
-        }
-        
-        // تطبيق فلتر البحث
-        if (searchTerm.trim()) {
-          const searchLower = searchTerm.toLowerCase();
-          filtered = filtered.filter(payment => 
-            payment.recipientName.toLowerCase().includes(searchLower) ||
-            payment.type.toLowerCase().includes(searchLower) ||
-            payment.paymentType.toLowerCase().includes(searchLower)
-          );
-        }
-        
-        setPayments(filtered);
-      } else {
-        // استخدام الطريقة القديمة كاحتياط
-        const filteredPayments = await getPaymentsByTimeFilter(timeFilter, customDays);
-        setPayments(filteredPayments);
-      }
-      
-      // إنشاء مودال نجاح
-      const successModal = document.createElement('div');
-      successModal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
-      successModal.innerHTML = `
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl animate-fade-in">
-          <div class="flex items-center text-green-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">تم الحذف بنجاح</h3>
-          </div>
-          <p class="text-gray-700 dark:text-gray-300 mb-6">تم حذف المدفوعة بنجاح من قاعدة البيانات.</p>
-          <div class="flex justify-end">
-            <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" id="close-success">إغلاق</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(successModal);
-      
-      // إضافة مستمع حدث لزر الإغلاق
-      document.getElementById('close-success')?.addEventListener('click', () => {
-        document.body.removeChild(successModal);
-      });
-      
+      setStatusModal({ isOpen: true, title: 'تم الحذف بنجاح', message: 'تم حذف المدفوعة بنجاح.', type: 'success' });
     } catch (err) {
       console.error('خطأ في حذف المدفوعة:', err);
-      setDeleteError('حدث خطأ أثناء حذف المدفوعة');
-      
-      // إنشاء مودال خطأ
-      const errorModal = document.createElement('div');
-      errorModal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
-      errorModal.innerHTML = `
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl animate-fade-in">
-          <div class="flex items-center text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">خطأ في الحذف</h3>
-          </div>
-          <p class="text-gray-700 dark:text-gray-300 mb-6">حدث خطأ أثناء محاولة حذف المدفوعة. يرجى المحاولة مرة أخرى.</p>
-          <div class="flex justify-end">
-            <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" id="close-error">إغلاق</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(errorModal);
-      
-      // إضافة مستمع حدث لزر الإغلاق
-      document.getElementById('close-error')?.addEventListener('click', () => {
-        document.body.removeChild(errorModal);
-      });
+      // Rollback UI on error
+      setLocalPayments(originalPayments);
+      setStatusModal({ isOpen: true, title: 'خطأ في الحذف', message: 'حدث خطأ أثناء حذف المدفوعة. يرجى المحاولة مرة أخرى.', type: 'error' });
     } finally {
       setDeleting(null);
-      setConfirmDelete(null);
     }
   };
   
-  // الحصول على اسم نوع الدفع بالعربية
-  const getPaymentTypeLabel = (type: 'full' | 'partial' | 'none') => {
-    switch (type) {
-      case 'full': return 'دفع كامل';
-      case 'partial': return 'دفع جزئي';
-      case 'none': return 'لم يتم الدفع';
-      default: return '';
-    }
-  };
-  
-  // الحصول على لون نوع الدفع
-  const getPaymentTypeColor = (type: 'full' | 'partial' | 'none') => {
-    switch (type) {
-      case 'full': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'partial': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'none': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      default: return '';
-    }
-  };
+  const filteredAndSortedPayments = useMemo(() => {
+    return localPayments
+      .filter(payment => {
+        const searchLower = searchTerm.toLowerCase();
+        const typeMatch = typeFilter === 'all' || payment.type === typeFilter;
+        const paymentTypeMatch = paymentTypeFilter === 'all' || payment.paymentType === paymentTypeFilter;
+        const searchMatch = !searchLower || payment.recipientName.toLowerCase().includes(searchLower);
+        return typeMatch && paymentTypeMatch && searchMatch;
+      })
+      .sort((a, b) => {
+        const valA = sortBy === 'date' ? new Date(a.date).getTime() : a.amount;
+        const valB = sortBy === 'date' ? new Date(b.date).getTime() : b.amount;
+        return sortDirection === 'asc' ? valA - valB : valB - valA;
+      });
+  }, [localPayments, searchTerm, typeFilter, paymentTypeFilter, sortBy, sortDirection]);
+
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('ar-IQ', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const getPaymentTypeLabel = (type: 'full' | 'partial' | 'none') => ({ full: 'دفع كامل', partial: 'دفع جزئي', none: 'لم يتم الدفع' }[type] || '');
+  const getPaymentTypeColor = (type: 'full' | 'partial' | 'none') => ({ full: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', partial: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', none: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' }[type] || '');
   
   return (
     <div className="p-4 pb-20 animate-fade-in">
-      {/* مودال تأكيد الحذف */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl animate-fade-in">
-            <div className="flex items-center text-red-500 mb-4">
-              <AlertCircle className="h-8 w-8 mr-3" />
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">تأكيد الحذف</h3>
-            </div>
-            <p className="text-gray-700 dark:text-gray-300 mb-6">هل أنت متأكد من رغبتك في حذف هذه المدفوعة؟ لا يمكن التراجع عن هذا الإجراء.</p>
-            <div className="flex justify-end gap-2">
-              <button 
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                onClick={() => setConfirmDelete(null)}
-                disabled={deleting !== null}
-              >
-                إلغاء
-              </button>
-              <button 
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
-                onClick={() => handleDeletePayment(confirmDelete)}
-                disabled={deleting !== null}
-              >
-                {deleting === confirmDelete ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    جاري الحذف...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    تأكيد الحذف
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+      <Modal isOpen={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)}>
+        <div className="flex items-center text-red-500 mb-4">
+          <AlertCircle className="h-8 w-8 mr-3" />
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">تأكيد الحذف</h3>
         </div>
-      )}
+        <p className="text-gray-700 dark:text-gray-300 mb-6">هل أنت متأكد من رغبتك في حذف هذه المدفوعة؟ لا يمكن التراجع عن هذا الإجراء.</p>
+        <div className="flex justify-end gap-2">
+          <button
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            onClick={() => setConfirmDeleteId(null)}
+            disabled={deleting !== null}
+          >
+            إلغاء
+          </button>
+          <button
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+            onClick={() => handleDeletePayment(confirmDeleteId!)}
+            disabled={deleting !== null}
+          >
+            {deleting === confirmDeleteId ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                جاري الحذف...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                تأكيد الحذف
+              </>
+            )}
+          </button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={statusModal.isOpen} onClose={() => setStatusModal({ ...statusModal, isOpen: false })}>
+        <div className="text-center">
+          <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center text-white mb-4 ${statusModal.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+            {statusModal.type === 'success' ? <Trash2 className="w-10 h-10" /> : <AlertCircle className="w-10 h-10" />}
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{statusModal.title}</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{statusModal.message}</p>
+          <button onClick={() => setStatusModal({ ...statusModal, isOpen: false })} className={`px-6 py-2 text-white rounded-lg transition-colors duration-200 font-bold ${statusModal.type === 'success' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>حسناً</button>
+        </div>
+      </Modal>
       
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 animate-bounce-in">
             <img
-              src="https://scontent.fosm4-2.fna.fbcdn.net/v/t39.30808-6/494646003_122103077492854376_4740803221172287157_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=8gnYz32ttRoQ7kNvwHVFH6B&_nc_oc=Adlg9De_-JOZZATh6rHCiNM4TwI6Qe55Da8iTvwoUW7AfUO98piKDr3i-3yy39pfSQA&_nc_pt=1&_nc_zt=23&_nc_ht=scontent.fosm4-2.fna&_nc_gid=m02mrNFC3RUiJRkPKNka1A&oh=00_AfWT_QZAIBnHVdxqpRk_ZI0KGj4cNRb9LjGtpmCkFag2PQ&oe=6897D9BA"
+              src="./images/logo.jpg"
               alt="العين"
               className="w-full h-full rounded-full object-cover logo-frame"
             />
@@ -410,7 +147,6 @@ export function PaymentHistory() {
           <p className="text-gray-600 dark:text-gray-400">سجل مدفوعات العمال والشركاء</p>
         </div>
         
-        {/* فلاتر البحث */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-8 animate-slide-up">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-4">
             <div className="relative w-full md:w-1/3">
@@ -453,32 +189,6 @@ export function PaymentHistory() {
                 <option value="none">لم يتم الدفع</option>
               </select>
               
-              <select
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value as 'all' | 'today' | 'week' | 'month' | 'custom')}
-              >
-                <option value="all">كل الفترات</option>
-                <option value="today">اليوم</option>
-                <option value="week">آخر أسبوع</option>
-                <option value="month">آخر شهر</option>
-                <option value="custom">فترة مخصصة</option>
-              </select>
-              
-              {timeFilter === 'custom' && (
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    className="w-16 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                    value={customDays}
-                    onChange={(e) => setCustomDays(e.target.value)}
-                    min="1"
-                    max="365"
-                  />
-                  <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">أيام</span>
-                </div>
-              )}
-              
               <button
                 className="flex items-center gap-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => {
@@ -492,7 +202,7 @@ export function PaymentHistory() {
               
               <button
                 className="flex items-center gap-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                onClick={toggleSortDirection}
+                onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
               >
                 <ArrowDownUp className="w-4 h-4" />
                 <span className="text-sm font-bold">
@@ -503,29 +213,11 @@ export function PaymentHistory() {
           </div>
         </div>
         
-        {/* رسالة خطأ الحذف */}
-        {deleteError && (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 p-4 rounded-lg text-center mb-4 animate-fade-in">
-            {deleteError}
-            <button 
-              className="mr-2 underline hover:no-underline" 
-              onClick={() => setDeleteError(null)}
-            >
-              إغلاق
-            </button>
-          </div>
-        )}
-        
-        {/* عرض المدفوعات */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
           </div>
-        ) : error ? (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 p-4 rounded-lg text-center">
-            {error}
-          </div>
-        ) : filteredPayments.length === 0 ? (
+        ) : filteredAndSortedPayments.length === 0 ? (
           <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-8 text-center">
             <div className="w-20 h-20 mx-auto bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 mb-4">
               <DollarSign className="w-10 h-10" />
@@ -539,16 +231,15 @@ export function PaymentHistory() {
           </div>
         ) : (
           <div className="grid gap-6">
-            {filteredPayments.map((payment) => (
+            {filteredAndSortedPayments.map((payment) => (
               <div
                 key={payment.id}
                 className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow relative"
               >
-                {/* زر الحذف */}
                 {userRole !== 'viewer' && (
                   <button
                     className="absolute top-4 left-4 p-2 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
-                    onClick={() => setConfirmDelete(payment.id || '')}
+                    onClick={() => setConfirmDeleteId(payment.id || '')}
                     disabled={deleting === payment.id}
                     title="حذف المدفوعة"
                   >

@@ -76,8 +76,11 @@ export function Settings() {
   };
 
   const clearAllData = () => {
-    // عرض نافذة التحقق من كلمة المرور
-    setShowPasswordConfirm(true);
+    const isConfirmed = window.confirm('هل أنت متأكد من أنك تريد حذف جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء.');
+    if (isConfirmed) {
+      // عرض نافذة التحقق من كلمة المرور
+      setShowPasswordConfirm(true);
+    }
   };
   
   // دالة تنفيذ حذف البيانات بعد التحقق من كلمة المرور
@@ -308,16 +311,14 @@ export function Settings() {
           )}
         </div>
       </div>
+      {/* مكون التحقق من كلمة المرور */}
+      {showPasswordConfirm && (
+        <PasswordConfirm
+          onConfirm={executeDataDelete}
+          onCancel={() => setShowPasswordConfirm(false)}
+          actionType="deleteData"
+        />
+      )}
     </div>
   );
-}
-
-{/* مكون التحقق من كلمة المرور */}
-{showPasswordConfirm && (
-<PasswordConfirm
-onConfirm={executeDataDelete}
-onCancel={() => setShowPasswordConfirm(false)}
-actionType="deleteData"
-/>
-)}
 }

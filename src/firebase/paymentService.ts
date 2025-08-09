@@ -74,9 +74,6 @@ export const addPayment = async (payment: Omit<Payment, 'id'>, updateContext?: (
           updateContext(newPayment);
         }
         
-        // تأخير أطول لضمان اكتمال العملية وتحديث Firebase
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
         console.log('تم الانتهاء من تأخير ما بعد إضافة الدفعة');
         return paymentId;
       } catch (error) {
