@@ -21,12 +21,14 @@ export function PaymentHistory() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'worker' | 'partner'>('all');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'full' | 'partial' | 'none'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
+  // Modals state
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [statusModal, setStatusModal] = useState({ isOpen: false, title: '', message: '', type: 'success' });
 
@@ -36,7 +38,8 @@ export function PaymentHistory() {
   }, [appPayments]);
   
   const handleDeletePayment = async (paymentId: string) => {
-    if (!paymentId || userRole === 'viewer') {
+    if (!paymentId) return;
+    if (userRole === 'viewer') {
       setStatusModal({ isOpen: true, title: 'غير مصرح', message: 'ليس لديك صلاحية لحذف المدفوعات.', type: 'error' });
       setConfirmDeleteId(null);
       return;
@@ -45,7 +48,7 @@ export function PaymentHistory() {
     setDeleting(paymentId);
     
     // Optimistic UI update
-    const originalPayments = localPayments;
+    const originalPayments = [...localPayments];
     setLocalPayments(prevPayments => prevPayments.filter(p => p.id !== paymentId));
     setConfirmDeleteId(null);
 
@@ -119,12 +122,23 @@ export function PaymentHistory() {
           </button>
         </div>
       </Modal>
+
+      <Modal isOpen={statusModal.isOpen} onClose={() => setStatusModal({ ...statusModal, isOpen: false })}>
+        <div className="text-center">
+          <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center text-white mb-4 ${statusModal.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+            {statusModal.type === 'success' ? <Trash2 className="w-10 h-10" /> : <AlertCircle className="w-10 h-10" />}
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{statusModal.title}</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{statusModal.message}</p>
+          <button onClick={() => setStatusModal({ ...statusModal, isOpen: false })} className={`px-6 py-2 text-white rounded-lg transition-colors duration-200 font-bold ${statusModal.type === 'success' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>حسناً</button>
+        </div>
+      </Modal>
       
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 animate-bounce-in">
             <img
-              src="https://scontent.fosm4-2.fna.fbcdn.net/v/t39.30808-6/494646003_122103077492854376_4740803221172287157_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=8gnYz32ttRoQ7kNvwHVFH6B&_nc_oc=Adlg9De_-JOZZATh6rHCiNM4TwI6Qe55Da8iTvwoUW7AfUO98piKDr3i-3yy39pfSQA&_nc_pt=1&_nc_zt=23&_nc_ht=scontent.fosm4-2.fna&_nc_gid=m02mrNFC3RUiJRkPKNka1A&oh=00_AfWT_QZAIBnHVdxqpRk_ZI0KGj4cNRb9LjGtpmCkFag2PQ&oe=6897D9BA"
+              src="./images/logo.jpg"
               alt="العين"
               className="w-full h-full rounded-full object-cover logo-frame"
             />
@@ -133,7 +147,6 @@ export function PaymentHistory() {
           <p className="text-gray-600 dark:text-gray-400">سجل مدفوعات العمال والشركاء</p>
         </div>
         
-        {/* فلاتر البحث */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-8 animate-slide-up">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-4">
             <div className="relative w-full md:w-1/3">
@@ -176,7 +189,6 @@ export function PaymentHistory() {
                 <option value="none">لم يتم الدفع</option>
               </select>
               
-              
               <button
                 className="flex items-center gap-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => {
@@ -190,7 +202,7 @@ export function PaymentHistory() {
               
               <button
                 className="flex items-center gap-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                onClick={toggleSortDirection}
+                onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
               >
                 <ArrowDownUp className="w-4 h-4" />
                 <span className="text-sm font-bold">
@@ -201,29 +213,11 @@ export function PaymentHistory() {
           </div>
         </div>
         
-        {/* رسالة خطأ الحذف */}
-        {deleteError && (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 p-4 rounded-lg text-center mb-4 animate-fade-in">
-            {deleteError}
-            <button 
-              className="mr-2 underline hover:no-underline" 
-              onClick={() => setDeleteError(null)}
-            >
-              إغلاق
-            </button>
-          </div>
-        )}
-        
-        {/* عرض المدفوعات */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
           </div>
-        ) : error ? (
-          <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 p-4 rounded-lg text-center">
-            {error}
-          </div>
-        ) : filteredPayments.length === 0 ? (
+        ) : filteredAndSortedPayments.length === 0 ? (
           <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-8 text-center">
             <div className="w-20 h-20 mx-auto bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 mb-4">
               <DollarSign className="w-10 h-10" />
@@ -237,16 +231,15 @@ export function PaymentHistory() {
           </div>
         ) : (
           <div className="grid gap-6">
-            {filteredPayments.map((payment) => (
+            {filteredAndSortedPayments.map((payment) => (
               <div
                 key={payment.id}
                 className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow relative"
               >
-                {/* زر الحذف */}
                 {userRole !== 'viewer' && (
                   <button
                     className="absolute top-4 left-4 p-2 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
-                    onClick={() => setConfirmDelete(payment.id || '')}
+                    onClick={() => setConfirmDeleteId(payment.id || '')}
                     disabled={deleting === payment.id}
                     title="حذف المدفوعة"
                   >
