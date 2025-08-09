@@ -22,15 +22,12 @@ export function AddOrder() {
     status: 'pending' as 'pending' | 'in-progress' | 'completed' | 'cancelled',
     serviceType: 'other' as 'promotion' | 'design' | 'photography' | 'printing' | 'other',
     // خدمة الترويج
+    amountReceived: '', // المبلغ الواصل
     promotionAmountUSD: '', // مبلغ الترويج بالدولار
     promotionAmount: '', // مبلغ الترويج بالدينار العراقي (يتم حسابه تلقائياً)
-    promotionCurrency: 'usd' as 'iqd' | 'usd', // تغيير القيمة الافتراضية إلى دولار
-    promotionProfit: '',
     promotionCommission: '', // عمولة الترويج
-    promotionAmountReceived: 'none' as 'full' | 'partial' | 'none', // حالة وصول المبلغ
-    promotionAmountReceivedPercentage: '', // نسبة المبلغ الواصل في حالة الوصول الجزئي
     // خدمة التصميم
-    designTypes: [] as string[],
+    designs: [{ type: '', quantity: 1 }],
     // خدمة التصوير
     photographyDetails: '',
     photographyAmount: '',
@@ -44,11 +41,29 @@ export function AddOrder() {
   });
 
   const addWorker = () => {
+    const newWorker = { name: '', share: 0, workType: '' };
+    if (formData.serviceType === 'promotion') {
+      newWorker.share = parseFloat(formData.promotionAmount) || 0;
+      newWorker.workType = 'ترويج';
+    }
     setFormData(prev => ({
       ...prev,
-      workers: [...prev.workers, { name: '', share: 0, workType: '' }]
+      workers: [...prev.workers, newWorker]
     }));
   };
+
+  // Auto-calculate commission for promotion service
+  useEffect(() => {
+    if (formData.serviceType === 'promotion') {
+      const amountReceived = parseFloat(formData.amountReceived) || 0;
+      const promotionAmount = parseFloat(formData.promotionAmount) || 0;
+      const commission = amountReceived - promotionAmount;
+      setFormData(prev => ({
+        ...prev,
+        promotionCommission: commission > 0 ? commission.toString() : '0'
+      }));
+    }
+  }, [formData.amountReceived, formData.promotionAmount, formData.serviceType]);
 
   const removeWorker = (index: number) => {
     setFormData(prev => ({
@@ -62,6 +77,35 @@ export function AddOrder() {
       ...prev,
       workers: prev.workers.map((worker, i) => 
         i === index ? { ...worker, [field]: value } : worker
+      )
+    }));
+  };
+
+  const designTypeOptions = [
+    'بوست', 'فيديو', 'شعار', 'هويه بصريه', 'بروفايل شركات', 'واجهه موقع الكتروني',
+    'تصميم علب', 'موشن كرافيك', 'تصميم تقويم', 'غلاف كتاب', 'تصميم مجله',
+    'بروشر', 'رول اب', 'لوحه اعلانيه', 'ستاند موتمرات'
+  ];
+
+  const addDesign = () => {
+    setFormData(prev => ({
+      ...prev,
+      designs: [...prev.designs, { type: '', quantity: 1 }]
+    }));
+  };
+
+  const removeDesign = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      designs: prev.designs.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateDesign = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      designs: prev.designs.map((design, i) =>
+        i === index ? { ...design, [field]: value } : design
       )
     }));
   };
@@ -164,7 +208,7 @@ export function AddOrder() {
         customerName: formData.customerName,
         orderDetails: formData.orderDetails,
         price: parseFloat(formData.price) || 0,
-        quantity: parseInt(formData.quantity) || 1,
+        quantity: 1, // Default value, as quantity is now per-design
         workers: formData.workers.filter(w => w.name.trim()),
         discount: parseFloat(formData.discount) || 0,
         discountType: formData.discountType,
@@ -176,15 +220,12 @@ export function AddOrder() {
         createdAt: new Date().toISOString(),
         serviceType: formData.serviceType,
         // خدمة الترويج
+        amountReceived: parseFloat(formData.amountReceived) || 0,
         promotionAmountUSD: parseFloat(formData.promotionAmountUSD) || 0,
         promotionAmount: parseFloat(formData.promotionAmount) || 0,
-        promotionCurrency: formData.promotionCurrency,
-        promotionProfit: parseFloat(formData.promotionCommission) || 0, // الربح يساوي العمولة
         promotionCommission: parseFloat(formData.promotionCommission) || 0,
-        promotionAmountReceived: formData.promotionAmountReceived,
-        promotionAmountReceivedPercentage: formData.promotionAmountReceived === 'partial' ? parseFloat(formData.promotionAmountReceivedPercentage) || 0 : 0,
         // خدمة التصميم
-        designTypes: formData.designTypes,
+        designs: formData.designs.filter(d => d.type),
         // خدمة التصوير
         photographyDetails: formData.photographyDetails,
         photographyAmount: parseFloat(formData.photographyAmount) || 0,
@@ -323,6 +364,19 @@ export function AddOrder() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    المبلغ الواصل (دينار عراقي) *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.amountReceived}
+                    onChange={(e) => setFormData(prev => ({ ...prev, amountReceived: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                     مبلغ الترويج بالدولار *
                   </label>
                   <input
@@ -357,69 +411,15 @@ export function AddOrder() {
                 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    العمولة (تحسب كربح) *
+                    العمولة (تلقائي)
                   </label>
                   <input
-                    type="number"
-                    value={formData.promotionCommission}
-                    onChange={(e) => setFormData(prev => ({ ...prev, promotionCommission: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    placeholder="0"
+                    type="text"
+                    value={formData.promotionCommission ? parseFloat(formData.promotionCommission).toLocaleString('ar-IQ') : ''}
+                    readOnly
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white transition-all duration-300"
+                    placeholder="يتم الحساب تلقائياً"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    حالة وصول المبلغ *
-                  </label>
-                  <div className="flex flex-col space-y-2">
-                    <label className="inline-flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        value="full"
-                        checked={formData.promotionAmountReceived === 'full'}
-                        onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: '' }))}
-                        className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
-                      />
-                      <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل بالكامل</span>
-                    </label>
-                    
-                    <label className="inline-flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        value="partial"
-                        checked={formData.promotionAmountReceived === 'partial'}
-                        onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none' }))}
-                        className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
-                      />
-                      <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل جزئياً</span>
-                    </label>
-                    
-                    {formData.promotionAmountReceived === 'partial' && (
-                      <div className="mr-7 mt-2">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={formData.promotionAmountReceivedPercentage}
-                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceivedPercentage: e.target.value }))}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300"
-                          placeholder="نسبة المبلغ الواصل"
-                        />
-                      </div>
-                    )}
-                    
-                    <label className="inline-flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        value="none"
-                        checked={formData.promotionAmountReceived === 'none'}
-                        onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: '' }))}
-                        className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
-                      />
-                      <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">غير واصل</span>
-                    </label>
-                  </div>
                 </div>
               </div>
             </div>
@@ -474,36 +474,56 @@ export function AddOrder() {
               </div>
 
               {formData.serviceType !== 'promotion' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      السعر الأساسي (دينار عراقي) *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                      required
-                      placeholder="0"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    السعر الأساسي (دينار عراقي) *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    required
+                    placeholder="0"
+                  />
+                </div>
+              )}
 
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      العدد *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                      min="1"
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                      required
-                      placeholder="1"
-                    />
-                  </div>
-                </>
+              {formData.serviceType === 'design' && (
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">التصاميم المطلوبة</h3>
+                  {formData.designs.map((design, index) => (
+                    <div key={index} className="flex gap-4 items-end mb-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">نوع التصميم</label>
+                        <select
+                          value={design.type}
+                          onChange={(e) => updateDesign(index, 'type', e.target.value)}
+                          className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                        >
+                          <option value="">اختر نوع التصميم</option>
+                          {designTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </div>
+                      <div className="w-24">
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">العدد</label>
+                        <input
+                          type="number"
+                          value={design.quantity}
+                          onChange={(e) => updateDesign(index, 'quantity', parseInt(e.target.value) || 1)}
+                          min="1"
+                          className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                        />
+                      </div>
+                      {formData.designs.length > 1 && (
+                        <button type="button" onClick={() => removeDesign(index)} className="p-2 text-red-500 hover:bg-red-100 rounded-full"><X className="w-5 h-5"/></button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={addDesign} className="mt-2 bg-primary-100 text-primary-700 px-4 py-2 rounded-lg flex items-center text-sm font-bold hover:bg-primary-200">
+                    <Plus className="w-4 h-4 ml-1" /> إضافة تصميم آخر
+                  </button>
+                </div>
               )}
 
               <div>
@@ -668,13 +688,24 @@ export function AddOrder() {
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                       نوع العمل
                     </label>
-                    <input
-                      type="text"
-                      value={worker.workType}
-                      onChange={(e) => updateWorker(index, 'workType', e.target.value)}
-                      placeholder="نوع العمل"
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                    />
+                    {formData.serviceType === 'design' ? (
+                      <select
+                        value={worker.workType}
+                        onChange={(e) => updateWorker(index, 'workType', e.target.value)}
+                        className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                      >
+                        <option value="">اختر نوع العمل</option>
+                        {designTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={worker.workType}
+                        onChange={(e) => updateWorker(index, 'workType', e.target.value)}
+                        placeholder="نوع العمل"
+                        className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                      />
+                    )}
                   </div>
                 </div>
               ))}
