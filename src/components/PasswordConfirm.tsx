@@ -22,7 +22,7 @@ export function PasswordConfirm({ onConfirm, onCancel, actionType }: PasswordCon
       case 'payment':
         return 'تسجيل دفع';
       case 'deleteData':
-        return 'مسح البيانات';
+        return 'مسح جميع البيانات (محلياً وفي قاعدة البيانات)';
       default:
         return 'تنفيذ العملية';
     }

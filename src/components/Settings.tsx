@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Moon, Sun, Lock, Download, Upload, Trash2, Shield, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { PasswordConfirm } from './PasswordConfirm';
+import { deleteAllOrders } from '../firebase/orderService';
+import { deleteAllPayments } from '../firebase/paymentService';
 
 export function Settings() {
   const { settings, setSettings, orders, setOrders, setIsAuthenticated, userRole, logout } = useApp();
@@ -79,11 +81,29 @@ export function Settings() {
   };
   
   // دالة تنفيذ حذف البيانات بعد التحقق من كلمة المرور
-  const executeDataDelete = () => {
-    setOrders([]);
-    localStorage.removeItem('al-ain-orders');
-    alert('تم حذف جميع البيانات بنجاح.');
-    setShowPasswordConfirm(false);
+  const executeDataDelete = async () => {
+    try {
+      // عرض رسالة تحميل
+      alert('جاري حذف البيانات... يرجى الانتظار');
+      
+      // حذف جميع الطلبات من Firebase
+      await deleteAllOrders();
+      
+      // حذف جميع المدفوعات من Firebase
+      await deleteAllPayments();
+      
+      // حذف البيانات المحلية
+      setOrders([]);
+      localStorage.removeItem('al-ain-orders');
+      
+      // عرض رسالة النجاح
+      alert('تم حذف جميع البيانات بنجاح من التطبيق وقاعدة البيانات.');
+      setShowPasswordConfirm(false);
+    } catch (error) {
+      console.error('خطأ في حذف البيانات:', error);
+      alert(`حدث خطأ أثناء حذف البيانات: ${error.message}`);
+      setShowPasswordConfirm(false);
+    }
   };
 
   // استخدام دالة تسجيل الخروج من AppContext بدلاً من الدالة المحلية
@@ -281,7 +301,7 @@ export function Settings() {
                   className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg"
                 >
                   <Trash2 className="w-5 h-5 ml-2" />
-                  حذف جميع البيانات
+                  حذف جميع البيانات (محلياً وفي قاعدة البيانات)
                 </button>
               </div>
             </div>

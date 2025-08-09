@@ -1,4 +1,4 @@
-import { ref, set, get, push } from 'firebase/database';
+import { ref, set, get, push, remove } from 'firebase/database';
 import { db } from './config';
 
 // نوع بيانات الدفع
@@ -243,6 +243,52 @@ export const deletePayment = async (paymentId: string): Promise<void> => {
     throw new Error('فشل في حذف الدفعة بعد عدة محاولات');
   } catch (error) {
     console.error('خطأ في حذف الدفعة:', error);
+    throw error;
+  }
+};
+
+/**
+ * حذف جميع المدفوعات من قاعدة البيانات
+ * @returns وعد يتم حله عند اكتمال العملية
+ */
+export const deleteAllPayments = async (): Promise<void> => {
+  console.log('بدء حذف جميع المدفوعات من Firebase');
+  
+  try {
+    // الحصول على مرجع لجميع المدفوعات
+    const paymentsRef = getPaymentsRef();
+    
+    // حذف جميع المدفوعات مع مهلة زمنية
+    const deletePromise = remove(paymentsRef);
+    const deleteTimeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('انتهت مهلة حذف جميع المدفوعات')), 60000);
+    });
+    
+    // محاولات إعادة المحاولة في حالة الفشل
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        await Promise.race([deletePromise, deleteTimeoutPromise]);
+        console.log(`تم حذف جميع المدفوعات بنجاح بعد ${attempts + 1} محاولة`);
+        return;
+      } catch (error) {
+        attempts++;
+        console.warn(`فشلت المحاولة ${attempts}/${maxAttempts} لحذف جميع المدفوعات:`, error);
+        
+        if (attempts >= maxAttempts) {
+          throw error;
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+      }
+    }
+    
+    throw new Error('فشل في حذف جميع المدفوعات بعد عدة محاولات');
+  } catch (error) {
+    console.error('خطأ في حذف جميع المدفوعات:', error);
     throw error;
   }
 };

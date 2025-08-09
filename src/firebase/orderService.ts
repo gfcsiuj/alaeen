@@ -2,6 +2,65 @@ import { ref, set, onValue, remove, update, get, push, DatabaseReference } from 
 import { db } from './config';
 import { Order } from '../types';
 
+/**
+ * حذف جميع الطلبات من قاعدة البيانات
+ * @returns وعد يتم حله عند اكتمال العملية
+ */
+export const deleteAllOrders = async (): Promise<void> => {
+  console.log('بدء حذف جميع الطلبات من Firebase');
+  
+  try {
+    // الحصول على مرجع لجميع الطلبات
+    const ordersRef = getOrdersRef();
+    
+    // حذف جميع الطلبات مع مهلة زمنية
+    const deletePromise = remove(ordersRef);
+    const deleteTimeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('انتهت مهلة حذف جميع الطلبات')), 60000);
+    });
+    
+    // محاولات إعادة المحاولة في حالة الفشل
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        await Promise.race([deletePromise, deleteTimeoutPromise]);
+        console.log(`تم حذف جميع الطلبات بنجاح بعد ${attempts + 1} محاولة`);
+        
+        // التحقق من نجاح الحذف
+        const verifyPromise = get(ordersRef);
+        const verifyTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('انتهت مهلة التحقق من حذف جميع الطلبات')), 30000);
+        });
+        
+        const verifySnapshot = await Promise.race([verifyPromise, verifyTimeoutPromise]) as any;
+        
+        if (verifySnapshot.exists()) {
+          throw new Error('فشل في حذف جميع الطلبات - لا تزال الطلبات موجودة');
+        }
+        
+        return;
+      } catch (error) {
+        attempts++;
+        console.warn(`فشلت المحاولة ${attempts}/${maxAttempts} لحذف جميع الطلبات:`, error);
+        
+        if (attempts >= maxAttempts) {
+          throw error;
+        }
+        
+        // الانتظار قبل إعادة المحاولة
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+      }
+    }
+    
+    throw new Error('فشل في حذف جميع الطلبات بعد عدة محاولات');
+  } catch (error) {
+    console.error('خطأ في حذف جميع الطلبات:', error);
+    throw error;
+  }
+};
+
 // الحصول على مرجع لقائمة الطلبات
 let ordersRef;
 
