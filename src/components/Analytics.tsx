@@ -6,11 +6,15 @@ import { addPayment, Payment } from '../firebase/paymentService';
 import { useNavigate } from 'react-router-dom';
 
 export function Analytics() {
-  const { orders, userRole, refreshPayments } = useApp();
+  const { orders, userRole, refreshPayments, payments } = useApp();
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState('all');
   const [customDays, setCustomDays] = useState('7');
   const [filteredOrders, setFilteredOrders] = useState(orders);
+  
+  // حالة لتتبع مدفوعات العمال والشركاء
+  const [workerPaymentStatus, setWorkerPaymentStatus] = useState<Record<string, { status: 'full' | 'partial' | 'none', remainingAmount?: number }>>({});
+  const [partnerPaymentStatus, setPartnerPaymentStatus] = useState<Record<string, { status: 'full' | 'partial' | 'none', remainingAmount?: number }>>({});
   
   // دالة للانتقال إلى صفحة سجل المدفوعات
   const goToPaymentHistory = () => {
@@ -107,18 +111,14 @@ export function Analytics() {
 
         document.body.appendChild(successDiv);
 
-        // تصفير المبلغ المستحق
-        // تحديث العنصر في DOM
-        const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-        workerCards.forEach(card => {
-          const nameElement = card.querySelector('h4.font-bold');
-          if (nameElement && nameElement.textContent === worker) {
-            const amountElement = card.querySelector('p.text-sm.text-gray-500');
-            if (amountElement) {
-              amountElement.innerHTML = `المبلغ المستحق: 0 د.ع <span class="text-green-500 mr-2 font-bold">(تم الدفع)</span>`;
-            }
+        // تحديث حالة الدفع للعامل باستخدام حالة React
+        setWorkerPaymentStatus(prevStatus => ({
+          ...prevStatus,
+          [worker]: {
+            status: 'full',
+            remainingAmount: 0
           }
-        });
+        }));
 
         document.getElementById('success-close')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
@@ -149,17 +149,14 @@ export function Analytics() {
 
         document.body.appendChild(successDiv);
 
-        // تحديث حالة الدفع الجزئي في DOM
-        const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-        workerCards.forEach(card => {
-          const nameElement = card.querySelector('h4.font-bold');
-          if (nameElement && nameElement.textContent === worker) {
-            const amountElement = card.querySelector('p.text-sm.text-gray-500');
-            if (amountElement) {
-              amountElement.innerHTML = `المبلغ المستحق: ${(share! - amount).toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 mr-2 font-bold">(تم دفع مبلغ جزئي)</span>`;
-            }
+        // تحديث حالة الدفع الجزئي باستخدام حالة React
+        setWorkerPaymentStatus(prevStatus => ({
+          ...prevStatus,
+          [worker]: {
+            status: 'partial',
+            remainingAmount: share! - amount
           }
-        });
+        }));
 
         document.getElementById('success-close')?.addEventListener('click', () => {
           document.body.removeChild(successDiv as Node);
@@ -185,17 +182,14 @@ export function Analytics() {
 
         document.body.appendChild(warningDiv);
 
-        // تحديث حالة الدفع في DOM
-        const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-        workerCards.forEach(card => {
-          const nameElement = card.querySelector('h4.font-bold');
-          if (nameElement && nameElement.textContent === worker) {
-            const amountElement = card.querySelector('p.text-sm.text-gray-500');
-            if (amountElement) {
-              amountElement.innerHTML = `المبلغ المستحق: ${share?.toLocaleString('ar-IQ')} د.ع <span class="text-red-500 mr-2 font-bold">(لم يتم الدفع)</span>`;
-            }
+        // تحديث حالة عدم الدفع باستخدام حالة React
+        setWorkerPaymentStatus(prevStatus => ({
+          ...prevStatus,
+          [worker]: {
+            status: 'none',
+            remainingAmount: share
           }
-        });
+        }));
 
         document.getElementById('warning-close')?.addEventListener('click', () => {
           document.body.removeChild(warningDiv as Node);
@@ -240,18 +234,14 @@ export function Analytics() {
 
         document.body.appendChild(successDiv);
 
-        // تحديث حالة الدفع في DOM
-        const partnerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-        partnerCards.forEach(card => {
-          const nameElement = card.querySelector('h3.text-lg.font-bold');
-          if (nameElement && nameElement.textContent?.includes(partner)) {
-            const statusElement = card.querySelector('span.text-red-500, span.text-blue-500, span.text-green-500');
-            if (statusElement) {
-              statusElement.className = 'text-green-500 mr-2 font-bold';
-              statusElement.textContent = '(تم الدفع)';
-            }
+        // تحديث حالة الدفع للشريك باستخدام حالة React
+        setPartnerPaymentStatus(prevStatus => ({
+          ...prevStatus,
+          [partner]: {
+            status: 'full',
+            remainingAmount: 0
           }
-        });
+        }));
 
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
@@ -280,18 +270,14 @@ export function Analytics() {
 
         document.body.appendChild(successDiv);
 
-        // تحديث حالة الدفع الجزئي في DOM
-        const partnerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-        partnerCards.forEach(card => {
-          const nameElement = card.querySelector('h3.text-lg.font-bold');
-          if (nameElement && nameElement.textContent?.includes(partner)) {
-            const statusElement = card.querySelector('span.text-red-500, span.text-blue-500, span.text-green-500');
-            if (statusElement) {
-              statusElement.className = 'text-blue-500 mr-2 font-bold';
-              statusElement.textContent = '(تم دفع مبلغ جزئي)';
-            }
+        // تحديث حالة الدفع الجزئي للشريك باستخدام حالة React
+        setPartnerPaymentStatus(prevStatus => ({
+          ...prevStatus,
+          [partner]: {
+            status: 'partial',
+            remainingAmount: partnerShare! - amount
           }
-        });
+        }));
 
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
@@ -339,6 +325,79 @@ export function Analytics() {
       setShowPasswordConfirm(false);
     }
   };
+
+  // تحديث حالة الدفع للعمال والشركاء بناءً على المدفوعات
+  useEffect(() => {
+    // تحديث حالة الدفع للعمال
+    const workerStatus: Record<string, { status: 'full' | 'partial' | 'none', remainingAmount?: number }> = {};
+    const partnerStatus: Record<string, { status: 'full' | 'partial' | 'none', remainingAmount?: number }> = {};
+    
+    // حساب المبالغ المستحقة للعمال من الطلبات المفلترة
+    const workerShares: Record<string, number> = {};
+    filteredOrders.forEach(order => {
+      order.workers.forEach(worker => {
+        if (worker.name.trim()) {
+          workerShares[worker.name] = (workerShares[worker.name] || 0) + worker.share;
+        }
+      });
+    });
+    
+    // حساب المبالغ المستحقة للشركاء
+    const netProfit = analyticsData.netProfit;
+    const partnerShare = netProfit / 3; // تقسيم الأرباح بالتساوي بين الشركاء الثلاثة
+    const partners = ['عبدالله', 'عياش', 'زهراء'];
+    partners.forEach(partner => {
+      partnerStatus[partner] = { status: 'none', remainingAmount: partnerShare };
+    });
+    
+    // تعيين الحالة الأولية لجميع العمال على 'none'
+    Object.keys(workerShares).forEach(worker => {
+      workerStatus[worker] = { status: 'none', remainingAmount: workerShares[worker] };
+    });
+    
+    // تحديث حالة الدفع بناءً على المدفوعات المسجلة
+    payments.forEach(payment => {
+      if (payment.type === 'worker') {
+        const worker = payment.recipientName;
+        const totalShare = workerShares[worker] || 0;
+        
+        if (payment.paymentType === 'full') {
+          // تم دفع كامل المبلغ
+          workerStatus[worker] = { status: 'full', remainingAmount: 0 };
+        } else if (payment.paymentType === 'partial') {
+          // تم دفع جزء من المبلغ
+          const currentRemaining = workerStatus[worker]?.remainingAmount || totalShare;
+          const newRemaining = Math.max(0, currentRemaining - payment.amount);
+          
+          if (newRemaining === 0) {
+            workerStatus[worker] = { status: 'full', remainingAmount: 0 };
+          } else {
+            workerStatus[worker] = { status: 'partial', remainingAmount: newRemaining };
+          }
+        }
+      } else if (payment.type === 'partner') {
+        const partner = payment.recipientName;
+        
+        if (payment.paymentType === 'full') {
+          // تم دفع كامل المبلغ
+          partnerStatus[partner] = { status: 'full', remainingAmount: 0 };
+        } else if (payment.paymentType === 'partial') {
+          // تم دفع جزء من المبلغ
+          const currentRemaining = partnerStatus[partner]?.remainingAmount || partnerShare;
+          const newRemaining = Math.max(0, currentRemaining - payment.amount);
+          
+          if (newRemaining === 0) {
+            partnerStatus[partner] = { status: 'full', remainingAmount: 0 };
+          } else {
+            partnerStatus[partner] = { status: 'partial', remainingAmount: newRemaining };
+          }
+        }
+      }
+    });
+    
+    setWorkerPaymentStatus(workerStatus);
+    setPartnerPaymentStatus(partnerStatus);
+  }, [payments, filteredOrders, analyticsData]);
 
   // تحديث الطلبات المفلترة عند تغيير الفلتر الزمني
   useEffect(() => {
@@ -815,7 +874,16 @@ export function Analytics() {
                             <div>
                               <h4 className="font-bold text-gray-900 dark:text-white">{worker}</h4>
                               <p className="text-sm text-gray-500 dark:text-gray-400">
-                                المبلغ المستحق: {share.toLocaleString('ar-IQ')} د.ع
+                                المبلغ المستحق: {workerPaymentStatus[worker]?.remainingAmount?.toLocaleString('ar-IQ') || share.toLocaleString('ar-IQ')} د.ع
+                                {workerPaymentStatus[worker]?.status === 'full' && (
+                                  <span className="text-green-500 mr-2 font-bold">(تم الدفع)</span>
+                                )}
+                                {workerPaymentStatus[worker]?.status === 'partial' && (
+                                  <span className="text-blue-500 mr-2 font-bold">(تم دفع مبلغ جزئي)</span>
+                                )}
+                                {workerPaymentStatus[worker]?.status === 'none' && (
+                                  <span className="text-red-500 mr-2 font-bold">(لم يتم الدفع)</span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -1059,7 +1127,18 @@ export function Analytics() {
               </div>
               <div className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-4 shadow-inner">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">الحصة من الأرباح:</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {(partnerPaymentStatus['عبدالله']?.remainingAmount?.toLocaleString('ar-IQ') || (analyticsData.netProfit / 3).toLocaleString('ar-IQ'))} د.ع
+                  {partnerPaymentStatus['عبدالله']?.status === 'full' && (
+                    <span className="text-green-500 text-sm mr-2 font-bold">(تم الدفع)</span>
+                  )}
+                  {partnerPaymentStatus['عبدالله']?.status === 'partial' && (
+                    <span className="text-blue-500 text-sm mr-2 font-bold">(تم دفع مبلغ جزئي)</span>
+                  )}
+                  {partnerPaymentStatus['عبدالله']?.status === 'none' && (
+                    <span className="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>
+                  )}
+                </p>
               </div>
               <button
                 className="w-full py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 font-bold flex items-center justify-center"
@@ -1221,7 +1300,18 @@ export function Analytics() {
               </div>
               <div className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-4 shadow-inner">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">الحصة من الأرباح:</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {(partnerPaymentStatus['عياش']?.remainingAmount?.toLocaleString('ar-IQ') || (analyticsData.netProfit / 3).toLocaleString('ar-IQ'))} د.ع
+                  {partnerPaymentStatus['عياش']?.status === 'full' && (
+                    <span className="text-green-500 text-sm mr-2 font-bold">(تم الدفع)</span>
+                  )}
+                  {partnerPaymentStatus['عياش']?.status === 'partial' && (
+                    <span className="text-blue-500 text-sm mr-2 font-bold">(تم دفع مبلغ جزئي)</span>
+                  )}
+                  {partnerPaymentStatus['عياش']?.status === 'none' && (
+                    <span className="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>
+                  )}
+                </p>
               </div>
               <button
                 className="w-full py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-200 font-bold flex items-center justify-center"
@@ -1375,7 +1465,18 @@ export function Analytics() {
               </div>
               <div className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-4 shadow-inner">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">الحصة من الأرباح:</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {(partnerPaymentStatus['زهراء']?.remainingAmount?.toLocaleString('ar-IQ') || (analyticsData.netProfit / 3).toLocaleString('ar-IQ'))} د.ع
+                  {partnerPaymentStatus['زهراء']?.status === 'full' && (
+                    <span className="text-green-500 text-sm mr-2 font-bold">(تم الدفع)</span>
+                  )}
+                  {partnerPaymentStatus['زهراء']?.status === 'partial' && (
+                    <span className="text-blue-500 text-sm mr-2 font-bold">(تم دفع مبلغ جزئي)</span>
+                  )}
+                  {partnerPaymentStatus['زهراء']?.status === 'none' && (
+                    <span className="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>
+                  )}
+                </p>
               </div>
               <button
                 className="w-full py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 font-bold flex items-center justify-center"
