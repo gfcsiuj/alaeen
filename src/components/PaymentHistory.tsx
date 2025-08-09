@@ -176,31 +176,6 @@ export function PaymentHistory() {
                 <option value="none">لم يتم الدفع</option>
               </select>
               
-              <select
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value as 'all' | 'today' | 'week' | 'month' | 'custom')}
-              >
-                <option value="all">كل الفترات</option>
-                <option value="today">اليوم</option>
-                <option value="week">آخر أسبوع</option>
-                <option value="month">آخر شهر</option>
-                <option value="custom">فترة مخصصة</option>
-              </select>
-              
-              {timeFilter === 'custom' && (
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    className="w-16 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                    value={customDays}
-                    onChange={(e) => setCustomDays(e.target.value)}
-                    min="1"
-                    max="365"
-                  />
-                  <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">أيام</span>
-                </div>
-              )}
               
               <button
                 className="flex items-center gap-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
