@@ -172,7 +172,7 @@ export function PaymentHistory() {
   };
   
   // حذف مدفوعة
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // معرف المدفوعة المراد حذفها
+  const [paymentToDeleteId, setPaymentToDeleteId] = useState<string | null>(null); // معرف المدفوعة المراد حذفها
   
   const handleDeletePayment = async (paymentId: string) => {
     if (!paymentId) return;
@@ -332,7 +332,7 @@ export function PaymentHistory() {
       });
     } finally {
       setDeleting(null);
-      setConfirmDelete(null);
+      setPaymentToDeleteId(null);
     }
   };
   
@@ -359,7 +359,7 @@ export function PaymentHistory() {
   return (
     <div className="p-4 pb-20 animate-fade-in">
       {/* مودال تأكيد الحذف */}
-      {confirmDelete && (
+      {paymentToDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl animate-fade-in">
             <div className="flex items-center text-red-500 mb-4">
@@ -370,17 +370,17 @@ export function PaymentHistory() {
             <div className="flex justify-end gap-2">
               <button 
                 className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                onClick={() => setConfirmDelete(null)}
+                onClick={() => setPaymentToDeleteId(null)}
                 disabled={deleting !== null}
               >
                 إلغاء
               </button>
               <button 
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
-                onClick={() => handleDeletePayment(confirmDelete)}
+                onClick={() => handleDeletePayment(paymentToDeleteId)}
                 disabled={deleting !== null}
               >
-                {deleting === confirmDelete ? (
+                {deleting === paymentToDeleteId ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     جاري الحذف...
@@ -548,7 +548,7 @@ export function PaymentHistory() {
                 {userRole !== 'viewer' && (
                   <button
                     className="absolute top-4 left-4 p-2 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
-                    onClick={() => setConfirmDelete(payment.id || '')}
+                    onClick={() => setPaymentToDeleteId(payment.id || '')}
                     disabled={deleting === payment.id}
                     title="حذف المدفوعة"
                   >
