@@ -174,7 +174,7 @@ export function Analytics() {
   useEffect(() => {
     const workerShares = {};
     filteredOrders.forEach(order => {
-        order.workers.forEach(worker => {
+        (order.workers || []).forEach(worker => {
             if (worker.name.trim()) {
                 workerShares[worker.name] = (workerShares[worker.name] || 0) + worker.share;
             }
@@ -204,7 +204,7 @@ export function Analytics() {
 
         const relevantOrders = filteredOrders.filter(o =>
             (!settlementDate || new Date(o.date) > settlementDate) &&
-            o.workers.some(w => w.name === worker)
+            (o.workers || []).some(w => w.name === worker)
         );
 
         const dueSinceSettlement = relevantOrders.reduce((sum, o) => {
