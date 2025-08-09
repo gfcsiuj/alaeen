@@ -69,8 +69,13 @@ export function PasswordConfirm({ onConfirm, onCancel, actionType }: PasswordCon
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
         <div className="text-center mb-6">
+          <div className="w-20 h-20 mx-auto bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center text-primary-600 dark:text-primary-400 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{getActionText()}</h2>
-          <p className="text-gray-600 dark:text-gray-400">هل أنت متأكد من رغبتك في {getActionText()}؟</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">هل أنت متأكد من رغبتك في {getActionText()}؟</p>
         </div>
 
         <div className="flex space-x-3 space-x-reverse rtl:space-x-reverse">

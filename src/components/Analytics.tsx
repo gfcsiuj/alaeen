@@ -71,24 +71,57 @@ export function Analytics() {
     let successDiv, warningDiv;
 
     try {
+      // إظهار مؤشر التحميل
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      loadingDiv.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+          <div class="w-20 h-20 mx-auto flex items-center justify-center mb-4">
+            <div class="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">جاري تسجيل الدفع</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">يرجى الانتظار...</p>
+        </div>
+      `;
+      document.body.appendChild(loadingDiv);
+
       // تنفيذ الإجراء المناسب بناءً على نوع العملية
       if (paymentAction.worker) {
         // تسجيل دفع للعامل
         const { type, worker, share } = paymentAction;
         
-        // تسجيل الدفع في Firebase
-        await addPayment({
-          type: 'worker',
-          recipientName: worker,
-          amount: type === 'full' ? share! : (paymentAction.amount || 0),
-          paymentType: type,
-          date: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          createdBy: userRole
-        }, (newPayment) => {
-          // تحديث المدفوعات في الذاكرة
-          console.log('تم تحديث المدفوعات في الذاكرة:', newPayment);
-        });
+        try {
+          // تسجيل الدفع في Firebase
+          await addPayment({
+            type: 'worker',
+            recipientName: worker,
+            amount: type === 'full' ? share! : (paymentAction.amount || 0),
+            paymentType: type,
+            date: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            createdBy: userRole
+          }, (newPayment) => {
+            // تحديث المدفوعات في الذاكرة
+            console.log('تم تحديث المدفوعات في الذاكرة:', newPayment);
+            // تحديث حالة الدفع للعامل
+            setWorkerPaymentStatus(prev => ({
+              ...prev,
+              [worker]: type
+            }));
+          });
+          
+          // إزالة مؤشر التحميل
+          if (document.body.contains(loadingDiv)) {
+            document.body.removeChild(loadingDiv);
+          }
+        } catch (error) {
+          console.error('خطأ في تسجيل الدفع:', error);
+          // إزالة مؤشر التحميل
+          if (document.body.contains(loadingDiv)) {
+            document.body.removeChild(loadingDiv);
+          }
+          throw error;
+        }
 
         if (type === 'full') {
         // تسجيل دفع كامل
@@ -199,19 +232,62 @@ export function Analytics() {
       // تسجيل دفع للشريك
       const { type, partner, partnerShare, amount } = paymentAction;
       
-      // تسجيل الدفع في Firebase
-      await addPayment({
-        type: 'partner',
-        recipientName: partner,
-        amount: type === 'full' ? partnerShare! : (amount || 0),
-        paymentType: type,
-        date: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        createdBy: userRole
-      }, (newPayment) => {
-        // تحديث المدفوعات في الذاكرة
-        console.log('تم تحديث المدفوعات في الذاكرة:', newPayment);
-      });
+      try {
+        // تسجيل الدفع في Firebase
+        await addPayment({
+          type: 'partner',
+          recipientName: partner,
+          amount: type === 'full' ? partnerShare! : (amount || 0),
+          paymentType: type,
+          date: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          createdBy: userRole
+        }, (newPayment) => {
+          // تحديث المدفوعات في الذاكرة
+          console.log('تم تحديث المدفوعات في الذاكرة:', newPayment);
+          // تحديث حالة الدفع للشريك
+          setPartnerPaymentStatus(prev => ({
+            ...prev,
+            [partner]: type
+          }));
+        });
+        
+        // إزالة مؤشر التحميل إذا كان موجودًا
+        const loadingElement = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50.flex.items-center.justify-center.z-50');
+        if (loadingElement && document.body.contains(loadingElement)) {
+          document.body.removeChild(loadingElement as Node);
+        }
+      } catch (error) {
+        console.error('خطأ في تسجيل دفع الشريك:', error);
+        // إزالة مؤشر التحميل إذا كان موجودًا
+        const loadingElement = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50.flex.items-center.justify-center.z-50');
+        if (loadingElement && document.body.contains(loadingElement)) {
+          document.body.removeChild(loadingElement as Node);
+        }
+        
+        // عرض رسالة الخطأ
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        errorDiv.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+            <div class="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">حدث خطأ</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">حدث خطأ أثناء تسجيل الدفع. يرجى المحاولة مرة أخرى.</p>
+            <button id="error-close" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
+              حسناً
+            </button>
+          </div>
+        `;
+        document.body.appendChild(errorDiv);
+        document.getElementById('error-close')?.addEventListener('click', () => {
+          document.body.removeChild(errorDiv as Node);
+        });
+        throw error;
+      }
 
       if (type === 'full') {
         // تسجيل دفع كامل للشريك
@@ -242,6 +318,20 @@ export function Analytics() {
             remainingAmount: 0
           }
         }));
+        
+        // تحديث حالة الدفع في DOM
+        setTimeout(() => {
+          const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
+          partnerCards.forEach(card => {
+            const nameElement = card.querySelector('h4.text-lg.font-bold');
+            if (nameElement && nameElement.textContent === partner) {
+              const amountElement = card.querySelector('p.text-2xl.font-bold');
+              if (amountElement) {
+                amountElement.innerHTML = `0 د.ع <span class="text-green-500 text-sm mr-2 font-bold">(تم الدفع)</span>`;
+              }
+            }
+          });
+        }, 500); // تأخير قصير لضمان تحديث DOM بعد تحديث الحالة
 
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
@@ -278,6 +368,20 @@ export function Analytics() {
             remainingAmount: partnerShare! - amount
           }
         }));
+        
+        // تحديث حالة الدفع الجزئي في DOM
+        setTimeout(() => {
+          const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
+          partnerCards.forEach(card => {
+            const nameElement = card.querySelector('h4.text-lg.font-bold');
+            if (nameElement && nameElement.textContent === partner) {
+              const amountElement = card.querySelector('p.text-2xl.font-bold');
+              if (amountElement) {
+                amountElement.innerHTML = `${(partnerShare! - amount).toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 text-sm mr-2 font-bold">(تم دفع مبلغ جزئي)</span>`;
+              }
+            }
+          });
+        }, 500); // تأخير قصير لضمان تحديث DOM بعد تحديث الحالة
 
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
@@ -956,16 +1060,18 @@ export function Analytics() {
 
                                   // تصفير المبلغ المستحق
                                   // تحديث العنصر في DOM
-                                  const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-                                  workerCards.forEach(card => {
-                                    const nameElement = card.querySelector('h4.font-bold');
-                                    if (nameElement && nameElement.textContent === worker) {
-                                      const amountElement = card.querySelector('p.text-sm.text-gray-500');
-                                      if (amountElement) {
-                                        amountElement.innerHTML = `المبلغ المستحق: 0 د.ع <span class="text-green-500 mr-2 font-bold">(تم الدفع)</span>`;
+                                  setTimeout(() => {
+                                    const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+                                    workerCards.forEach(card => {
+                                      const nameElement = card.querySelector('h4.font-bold');
+                                      if (nameElement && nameElement.textContent === worker) {
+                                        const amountElement = card.querySelector('p.text-sm.text-gray-500');
+                                        if (amountElement) {
+                                          amountElement.innerHTML = `المبلغ المستحق: 0 د.ع <span class="text-green-500 mr-2 font-bold">(تم الدفع)</span>`;
+                                        }
                                       }
-                                    }
-                                  });
+                                    });
+                                  }, 500); // تأخير قصير لضمان تحديث DOM بعد تحديث الحالة
                                 });
 
                                 document.getElementById('pay-partial')?.addEventListener('click', () => {
@@ -1020,16 +1126,18 @@ export function Analytics() {
                                     setShowPasswordConfirm(true);
 
                                     // تحديث حالة الدفع الجزئي في DOM
-                                    const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-                                    workerCards.forEach(card => {
-                                      const nameElement = card.querySelector('h4.font-bold');
-                                      if (nameElement && nameElement.textContent === worker) {
-                                        const amountElement = card.querySelector('p.text-sm.text-gray-500');
-                                        if (amountElement) {
-                                          amountElement.innerHTML = `المبلغ المستحق: ${(share - amount).toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 mr-2 font-bold">(تم دفع مبلغ جزئي)</span>`;
+                                    setTimeout(() => {
+                                      const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+                                      workerCards.forEach(card => {
+                                        const nameElement = card.querySelector('h4.font-bold');
+                                        if (nameElement && nameElement.textContent === worker) {
+                                          const amountElement = card.querySelector('p.text-sm.text-gray-500');
+                                          if (amountElement) {
+                                            amountElement.innerHTML = `المبلغ المستحق: ${(share - amount).toLocaleString('ar-IQ')} د.ع <span class="text-blue-500 mr-2 font-bold">(تم دفع مبلغ جزئي)</span>`;
+                                          }
                                         }
-                                      }
-                                    });
+                                      });
+                                    }, 500); // تأخير قصير لضمان تحديث DOM بعد تحديث الحالة
                                   });
 
                                   document.getElementById('cancel-partial')?.addEventListener('click', () => {
@@ -1054,16 +1162,18 @@ export function Analytics() {
                                   setShowPasswordConfirm(true);
 
                                   // تحديث حالة الدفع في DOM
-                                  const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
-                                  workerCards.forEach(card => {
-                                    const nameElement = card.querySelector('h4.font-bold');
-                                    if (nameElement && nameElement.textContent === worker) {
-                                      const amountElement = card.querySelector('p.text-sm.text-gray-500');
-                                      if (amountElement) {
-                                        amountElement.innerHTML = `المبلغ المستحق: ${share.toLocaleString('ar-IQ')} د.ع <span class="text-red-500 mr-2 font-bold">(لم يتم الدفع)</span>`;
+                                  setTimeout(() => {
+                                    const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
+                                    workerCards.forEach(card => {
+                                      const nameElement = card.querySelector('h4.font-bold');
+                                      if (nameElement && nameElement.textContent === worker) {
+                                        const amountElement = card.querySelector('p.text-sm.text-gray-500');
+                                        if (amountElement) {
+                                          amountElement.innerHTML = `المبلغ المستحق: ${share.toLocaleString('ar-IQ')} د.ع <span class="text-red-500 mr-2 font-bold">(لم يتم الدفع)</span>`;
+                                        }
                                       }
-                                    }
-                                  });
+                                    });
+                                  }, 500); // تأخير قصير لضمان تحديث DOM بعد تحديث الحالة
                                 });
 
                                 document.getElementById('close-modal')?.addEventListener('click', () => {
@@ -1258,15 +1368,18 @@ export function Analytics() {
                     }
                     document.body.appendChild(warningDiv);
                     const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                    partnerCards.forEach(card => {
-                      const nameElement = card.querySelector('h4.text-lg.font-bold');
-                      if (nameElement && nameElement.textContent === 'عبدالله') {
-                        const amountElement = card.querySelector('p.text-2xl.font-bold');
-                        if (amountElement) {
-                          amountElement.innerHTML = `${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع <span class="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>`;
+                    // إضافة تأخير زمني لتحديث DOM بعد تحديث الحالة
+                    setTimeout(() => {
+                      partnerCards.forEach(card => {
+                        const nameElement = card.querySelector('h4.text-lg.font-bold');
+                        if (nameElement && nameElement.textContent === 'عبدالله') {
+                          const amountElement = card.querySelector('p.text-2xl.font-bold');
+                          if (amountElement) {
+                            amountElement.innerHTML = `${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع <span class="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>`;
+                          }
                         }
-                      }
-                    });
+                      });
+                    }, 500); // تأخير 500 مللي ثانية لضمان تحديث الحالة أولاً
                     document.getElementById('warning-close-partner1')?.addEventListener('click', () => {
                       if (document.body.contains(warningDiv)) {
                         document.body.removeChild(warningDiv);
@@ -1423,15 +1536,18 @@ export function Analytics() {
                     }
                     document.body.appendChild(warningDiv);
                     const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                    partnerCards.forEach(card => {
-                      const nameElement = card.querySelector('h4.text-lg.font-bold');
-                      if (nameElement && nameElement.textContent === 'عياش') {
-                        const amountElement = card.querySelector('p.text-2xl.font-bold');
-                        if (amountElement) {
-                          amountElement.innerHTML = `${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع <span class="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>`;
+                    // إضافة تأخير زمني لتحديث DOM بعد تحديث الحالة
+                    setTimeout(() => {
+                      partnerCards.forEach(card => {
+                        const nameElement = card.querySelector('h4.text-lg.font-bold');
+                        if (nameElement && nameElement.textContent === 'عياش') {
+                          const amountElement = card.querySelector('p.text-2xl.font-bold');
+                          if (amountElement) {
+                            amountElement.innerHTML = `${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع <span class="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>`;
+                          }
                         }
-                      }
-                    });
+                      });
+                    }, 500); // تأخير 500 مللي ثانية لضمان تحديث الحالة أولاً
                     document.getElementById('warning-close-partner2')?.addEventListener('click', () => {
                       if (document.body.contains(warningDiv)) {
                         document.body.removeChild(warningDiv);
@@ -1601,15 +1717,18 @@ export function Analytics() {
                     }
                     document.body.appendChild(warningDiv);
                     const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
-                    partnerCards.forEach(card => {
-                      const nameElement = card.querySelector('h4.text-lg.font-bold');
-                      if (nameElement && nameElement.textContent === 'زهراء') {
-                        const amountElement = card.querySelector('p.text-2xl.font-bold');
-                        if (amountElement) {
-                          amountElement.innerHTML = `${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع <span class="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>`;
+                    // إضافة تأخير زمني لتحديث DOM بعد تحديث الحالة
+                    setTimeout(() => {
+                      partnerCards.forEach(card => {
+                        const nameElement = card.querySelector('h4.text-lg.font-bold');
+                        if (nameElement && nameElement.textContent === 'زهراء') {
+                          const amountElement = card.querySelector('p.text-2xl.font-bold');
+                          if (amountElement) {
+                            amountElement.innerHTML = `${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع <span class="text-red-500 text-sm mr-2 font-bold">(لم يتم الدفع)</span>`;
+                          }
                         }
-                      }
-                    });
+                      });
+                    }, 500); // تأخير 500 مللي ثانية لضمان تحديث الحالة أولاً
                     document.getElementById('warning-close-partner3')?.addEventListener('click', () => {
                       if (document.body.contains(warningDiv)) {
                         document.body.removeChild(warningDiv);
