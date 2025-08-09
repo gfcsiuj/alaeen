@@ -491,12 +491,12 @@ export function Analytics() {
 
   // تحديث حالة الدفع للعمال والشركاء بناءً على المدفوعات
   useEffect(() => {
-    // تحديث حالة الدفع للعمال
+    // حساب المبالغ المستحقة للعمال
+    const workerShares: Record<string, number> = {};
     const workerStatus: Record<string, { status: 'full' | 'partial' | 'none', remainingAmount?: number }> = {};
     const partnerStatus: Record<string, { status: 'full' | 'partial' | 'none', remainingAmount?: number }> = {};
     
-    // حساب المبالغ المستحقة للعمال من الطلبات المفلترة
-    const workerShares: Record<string, number> = {};
+    // حساب إجمالي المبالغ المستحقة للعمال من الطلبات المفلترة
     filteredOrders.forEach(order => {
       order.workers.forEach(worker => {
         if (worker.name.trim()) {
@@ -509,52 +509,69 @@ export function Analytics() {
     const netProfit = analyticsData.netProfit;
     const partnerShare = netProfit / 3; // تقسيم الأرباح بالتساوي بين الشركاء الثلاثة
     const partners = ['عبدالله', 'عياش', 'زهراء'];
-    partners.forEach(partner => {
-      partnerStatus[partner] = { status: 'none', remainingAmount: partnerShare };
-    });
     
-    // تعيين الحالة الأولية لجميع العمال على 'none'
+    // تعيين الحالة الأولية لجميع العمال والشركاء على 'none' مع المبلغ الكامل
     Object.keys(workerShares).forEach(worker => {
       workerStatus[worker] = { status: 'none', remainingAmount: workerShares[worker] };
     });
     
-    // تحديث حالة الدفع بناءً على المدفوعات المسجلة
-    payments.forEach(payment => {
-      if (payment.type === 'worker') {
-        const worker = payment.recipientName;
-        const totalShare = workerShares[worker] || 0;
-        
-        if (payment.paymentType === 'full') {
-          // تم دفع كامل المبلغ
-          workerStatus[worker] = { status: 'full', remainingAmount: 0 };
-        } else if (payment.paymentType === 'partial') {
-          // تم دفع جزء من المبلغ
-          const currentRemaining = workerStatus[worker]?.remainingAmount || totalShare;
-          const newRemaining = Math.max(0, currentRemaining - payment.amount);
-          
-          if (newRemaining === 0) {
-            workerStatus[worker] = { status: 'full', remainingAmount: 0 };
-          } else {
-            workerStatus[worker] = { status: 'partial', remainingAmount: newRemaining };
-          }
-        }
-      } else if (payment.type === 'partner') {
-        const partner = payment.recipientName;
-        
-        if (payment.paymentType === 'full') {
-          // تم دفع كامل المبلغ
-          partnerStatus[partner] = { status: 'full', remainingAmount: 0 };
-        } else if (payment.paymentType === 'partial') {
-          // تم دفع جزء من المبلغ
-          const currentRemaining = partnerStatus[partner]?.remainingAmount || partnerShare;
-          const newRemaining = Math.max(0, currentRemaining - payment.amount);
-          
-          if (newRemaining === 0) {
-            partnerStatus[partner] = { status: 'full', remainingAmount: 0 };
-          } else {
-            partnerStatus[partner] = { status: 'partial', remainingAmount: newRemaining };
-          }
-        }
+    partners.forEach(partner => {
+      partnerStatus[partner] = { status: 'none', remainingAmount: partnerShare };
+    });
+    
+    // إنشاء قاموس لتتبع آخر دفعة لكل عامل وشريك
+    const latestWorkerPayments: Record<string, Payment> = {};
+    const latestPartnerPayments: Record<string, Payment> = {};
+    
+    // فرز المدفوعات حسب التاريخ (الأحدث أولاً)
+    const sortedPayments = [...payments].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    // تحديد آخر دفعة لكل عامل وشريك
+    sortedPayments.forEach(payment => {
+      const recipient = payment.recipientName;
+      
+      if (payment.type === 'worker' && !latestWorkerPayments[recipient]) {
+        latestWorkerPayments[recipient] = payment;
+      } else if (payment.type === 'partner' && !latestPartnerPayments[recipient]) {
+        latestPartnerPayments[recipient] = payment;
+      }
+    });
+    
+    // تطبيق آخر دفعة لكل عامل
+    Object.entries(latestWorkerPayments).forEach(([worker, payment]) => {
+      const totalShare = workerShares[worker] || 0;
+      
+      if (payment.paymentType === 'full') {
+        // تم دفع كامل المبلغ
+        workerStatus[worker] = { status: 'full', remainingAmount: 0 };
+      } else if (payment.paymentType === 'partial') {
+        // تم دفع جزء من المبلغ
+        workerStatus[worker] = { 
+          status: 'partial', 
+          remainingAmount: Math.max(0, totalShare - payment.amount)
+        };
+      } else if (payment.paymentType === 'none') {
+        // لم يتم الدفع
+        workerStatus[worker] = { status: 'none', remainingAmount: totalShare };
+      }
+    });
+    
+    // تطبيق آخر دفعة لكل شريك
+    Object.entries(latestPartnerPayments).forEach(([partner, payment]) => {
+      if (payment.paymentType === 'full') {
+        // تم دفع كامل المبلغ
+        partnerStatus[partner] = { status: 'full', remainingAmount: 0 };
+      } else if (payment.paymentType === 'partial') {
+        // تم دفع جزء من المبلغ
+        partnerStatus[partner] = { 
+          status: 'partial', 
+          remainingAmount: Math.max(0, partnerShare - payment.amount)
+        };
+      } else if (payment.paymentType === 'none') {
+        // لم يتم الدفع
+        partnerStatus[partner] = { status: 'none', remainingAmount: partnerShare };
       }
     });
     
@@ -1003,6 +1020,9 @@ export function Analytics() {
                             <button
                               className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 text-sm"
                               onClick={() => {
+                                // استخدام الرصيد المتبقي من حالة الدفع بدلاً من المبلغ الإجمالي
+                                const remainingAmount = workerPaymentStatus[worker]?.remainingAmount || share;
+                                
                                 // إنشاء عنصر div للنافذة المنبثقة
                                 const modalDiv = document.createElement('div');
                                 modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -1016,7 +1036,7 @@ export function Analytics() {
                                         ${worker.charAt(0)}
                                       </div>
                                       <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">${worker}</p>
-                                      <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${share.toLocaleString('ar-IQ')} د.ع</p>
+                                      <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${remainingAmount.toLocaleString('ar-IQ')} د.ع</p>
                                     </div>
 
                                     <div class="space-y-3 mb-6">
@@ -1062,7 +1082,7 @@ export function Analytics() {
                                   setPaymentAction({
                                     type: 'full',
                                     worker,
-                                    share
+                                    share: remainingAmount
                                   });
                                   setShowPasswordConfirm(true);
 
@@ -1114,7 +1134,7 @@ export function Analytics() {
                                     const amountInput = document.getElementById('partial-amount') as HTMLInputElement;
                                     const amount = parseFloat(amountInput.value);
 
-                                    if (isNaN(amount) || amount <= 0 || amount > share) {
+                                    if (isNaN(amount) || amount <= 0 || amount > remainingAmount) {
                                       alert('الرجاء إدخال مبلغ صحيح (أكبر من صفر وأقل من أو يساوي المبلغ المستحق)');
                                       return;
                                     }
@@ -1128,7 +1148,7 @@ export function Analytics() {
                                     setPaymentAction({
                                       type: 'partial',
                                       worker,
-                                      share,
+                                      share: remainingAmount,
                                       amount
                                     });
                                     setShowPasswordConfirm(true);
@@ -1165,7 +1185,7 @@ export function Analytics() {
                                   setPaymentAction({
                                     type: 'none',
                                     worker,
-                                    share
+                                    share: remainingAmount
                                   });
                                   setShowPasswordConfirm(true);
 
@@ -1261,6 +1281,9 @@ export function Analytics() {
               <button
                 className="w-full py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 font-bold flex items-center justify-center"
                 onClick={() => {
+                  // استخدام الرصيد المتبقي من حالة الدفع بدلاً من المبلغ الإجمالي
+                  const remainingAmount = partnerPaymentStatus['عبدالله']?.remainingAmount || (analyticsData.netProfit / 3);
+                  
                   // إنشاء عنصر div للنافذة المنبثقة
                   const modalDiv = document.createElement('div');
                   modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -1273,7 +1296,7 @@ export function Analytics() {
                           ع
                         </div>
                         <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">عبدالله</p>
-                        <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                        <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${remainingAmount.toLocaleString('ar-IQ')} د.ع</p>
                       </div>
                       <div class="space-y-3 mb-6">
                         <button id="pay-full-partner1" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
@@ -1308,7 +1331,7 @@ export function Analytics() {
                     setPaymentAction({
                       type: 'full',
                       partner: 'عبدالله',
-                      partnerShare: analyticsData.netProfit / 3
+                      partnerShare: remainingAmount
                     });
                     setShowPasswordConfirm(true);
                   });
@@ -1336,8 +1359,7 @@ export function Analytics() {
                     document.getElementById('confirm-partial-partner1')?.addEventListener('click', () => {
                       const amountInput = document.getElementById('partial-amount-partner1') as HTMLInputElement;
                       const amount = parseFloat(amountInput.value);
-                      const partnerShare = analyticsData.netProfit / 3;
-                      if (isNaN(amount) || amount <= 0 || amount > partnerShare) {
+                      if (isNaN(amount) || amount <= 0 || amount > remainingAmount) {
                         alert('الرجاء إدخال مبلغ صحيح (أكبر من صفر وأقل من أو يساوي المبلغ المستحق)');
                         return;
                       }
@@ -1347,7 +1369,7 @@ export function Analytics() {
                       setPaymentAction({
                         type: 'partial',
                         partner: 'عبدالله',
-                        partnerShare,
+                        partnerShare: remainingAmount,
                         amount
                       });
                       setShowPasswordConfirm(true);
@@ -1367,7 +1389,7 @@ export function Analytics() {
                           </svg>
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تنبيه: لم يتم الدفع</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع مستحقات الشريك عبدالله البالغة ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع مستحقات الشريك عبدالله البالغة ${remainingAmount.toLocaleString('ar-IQ')} د.ع</p>
                         <button id="warning-close-partner1" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">حسناً</button>
                       </div>
                     `;
@@ -1437,6 +1459,9 @@ export function Analytics() {
               <button
                 className="w-full py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-200 font-bold flex items-center justify-center"
                 onClick={() => {
+                  // استخدام الرصيد المتبقي من حالة الدفع بدلاً من المبلغ الإجمالي
+                  const remainingAmount = partnerPaymentStatus['عياش']?.remainingAmount || (analyticsData.netProfit / 3);
+                  
                   const modalDiv = document.createElement('div');
                   modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
                   modalDiv.innerHTML = `
@@ -1447,7 +1472,7 @@ export function Analytics() {
                           ع
                         </div>
                         <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">عياش</p>
-                        <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                        <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${remainingAmount.toLocaleString('ar-IQ')} د.ع</p>
                       </div>
                       <div class="space-y-3 mb-6">
                         <button id="pay-full-partner2" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
@@ -1480,7 +1505,7 @@ export function Analytics() {
                     setPaymentAction({
                       type: 'full',
                       partner: 'عياش',
-                      partnerShare: analyticsData.netProfit / 3
+                      partnerShare: remainingAmount
                     });
                     setShowPasswordConfirm(true);
                   });
@@ -1506,8 +1531,7 @@ export function Analytics() {
                     document.getElementById('confirm-partial-partner2')?.addEventListener('click', () => {
                       const amountInput = document.getElementById('partial-amount-partner2') as HTMLInputElement;
                       const amount = parseFloat(amountInput.value);
-                      const partnerShare = analyticsData.netProfit / 3;
-                      if (isNaN(amount) || amount <= 0 || amount > partnerShare) {
+                      if (isNaN(amount) || amount <= 0 || amount > remainingAmount) {
                         alert('الرجاء إدخال مبلغ صحيح (أكبر من صفر وأقل من أو يساوي المبلغ المستحق)');
                         return;
                       }
@@ -1515,7 +1539,7 @@ export function Analytics() {
                       setPaymentAction({
                         type: 'partial',
                         partner: 'عياش',
-                        partnerShare,
+                        partnerShare: remainingAmount,
                         amount
                       });
                       setShowPasswordConfirm(true);
@@ -1535,7 +1559,7 @@ export function Analytics() {
                           </svg>
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تنبيه: لم يتم الدفع</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع مستحقات الشريك عياش البالغة ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع مستحقات الشريك عياش البالغة ${remainingAmount.toLocaleString('ar-IQ')} د.ع</p>
                         <button id="warning-close-partner2" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">حسناً</button>
                       </div>
                     `;
@@ -1605,6 +1629,9 @@ export function Analytics() {
               <button
                 className="w-full py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 font-bold flex items-center justify-center"
                 onClick={() => {
+                  // استخدام الرصيد المتبقي من حالة الدفع بدلاً من المبلغ الإجمالي
+                  const remainingAmount = partnerPaymentStatus['زهراء']?.remainingAmount || (analyticsData.netProfit / 3);
+                  
                   const modalDiv = document.createElement('div');
                   modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
                   modalDiv.innerHTML = `
@@ -1615,7 +1642,7 @@ export function Analytics() {
                           ز
                         </div>
                         <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">زهراء</p>
-                        <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                        <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${remainingAmount.toLocaleString('ar-IQ')} د.ع</p>
                       </div>
                       <div class="space-y-3 mb-6">
                         <button id="pay-full-partner3" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
@@ -1648,7 +1675,7 @@ export function Analytics() {
                     setPaymentAction({
                       type: 'full',
                       partner: 'زهراء',
-                      partnerShare: analyticsData.netProfit / 3
+                      partnerShare: remainingAmount
                     });
                     setShowPasswordConfirm(true);
                   });
@@ -1679,8 +1706,7 @@ export function Analytics() {
                     document.getElementById('confirm-partial-partner3')?.addEventListener('click', () => {
                       const partialAmountInput = document.getElementById('partial-amount-partner3') as HTMLInputElement;
                       const partialAmount = parseFloat(partialAmountInput.value);
-                      const totalAmount = analyticsData.netProfit / 3;
-                      if (isNaN(partialAmount) || partialAmount <= 0 || partialAmount > totalAmount) {
+                      if (isNaN(partialAmount) || partialAmount <= 0 || partialAmount > remainingAmount) {
                         const errorElement = document.getElementById('amount-error-partner3');
                         if (errorElement) {
                           errorElement.classList.remove('hidden');
@@ -1693,7 +1719,7 @@ export function Analytics() {
                       setPaymentAction({
                         type: 'partial',
                         partner: 'زهراء',
-                        partnerShare: totalAmount,
+                        partnerShare: remainingAmount,
                         amount: partialAmount
                       });
                       setShowPasswordConfirm(true);
@@ -1714,7 +1740,7 @@ export function Analytics() {
                           </svg>
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تم تسجيل عدم الدفع</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع المبلغ (${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع) للشريك زهراء</p>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع المبلغ (${remainingAmount.toLocaleString('ar-IQ')} د.ع) للشريك زهراء</p>
                         <button id="warning-close-partner3" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
                           حسناً
                         </button>
