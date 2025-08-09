@@ -308,7 +308,7 @@ export function AddOrder() {
               نوع الخدمة
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               <div 
                 onClick={() => setFormData(prev => ({ ...prev, serviceType: 'promotion' }))}
                 className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-2 ${formData.serviceType === 'promotion' ? 'bg-primary-50 border-primary-500 shadow-md dark:bg-primary-900/30 dark:border-primary-500' : 'bg-white border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700'}`}
@@ -658,7 +658,7 @@ export function AddOrder() {
             <div className="space-y-4">
               {formData.workers.map((worker, index) => (
                 <div key={index} className="space-y-3 animate-slide-up border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4">
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     <input
                       type="text"
                       value={worker.name}

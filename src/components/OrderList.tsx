@@ -134,7 +134,7 @@ export default function OrderList() {
 
       
       {/* Search and Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="space-y-4">
           {/* Search */}
           <div className="relative">
@@ -224,7 +224,7 @@ export default function OrderList() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-2 mt-4">
+                <div className="flex flex-wrap justify-end gap-2 mt-4">
                   <button
                     onClick={() => setSelectedOrder(order)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
@@ -390,7 +390,7 @@ export default function OrderList() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       السعر
@@ -512,7 +512,7 @@ export default function OrderList() {
       {/* Edit Order Modal */}
       {orderToEdit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg md:max-w-4xl max-h-[90vh] overflow-y-auto">
             <EditOrder 
               order={orderToEdit} 
               onClose={() => {

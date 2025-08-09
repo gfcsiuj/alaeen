@@ -376,7 +376,7 @@ export function Analytics() {
         </div>
 
         {/* Main Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-gradient-to-br from-primary-500 to-pink-500 rounded-2xl p-6 text-white shadow-xl animate-slide-up transform hover:scale-105 transition-all duration-300">
                 <div className="flex items-center justify-between">
                     <div>
