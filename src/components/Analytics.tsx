@@ -8,7 +8,7 @@ export function Analytics() {
   const [timeFilter, setTimeFilter] = useState('all');
   const [customDays, setCustomDays] = useState('7');
   const [filteredOrders, setFilteredOrders] = useState(orders);
-  
+
   // حالات للتحقق من كلمة المرور
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [paymentAction, setPaymentAction] = useState<{
@@ -23,15 +23,15 @@ export function Analytics() {
   // دالة تنفيذ عملية تسجيل الدفع بعد التحقق من كلمة المرور
   const executePaymentAction = () => {
     if (!paymentAction) return;
-    
+
     // إنشاء العناصر المطلوبة للعرض
     let successDiv, warningDiv;
-    
+
     // تنفيذ الإجراء المناسب بناءً على نوع العملية
     if (paymentAction.worker) {
       // تسجيل دفع للعامل
       const { type, worker, share } = paymentAction;
-      
+
       if (type === 'full') {
         // تسجيل دفع كامل
         successDiv = document.createElement('div');
@@ -50,9 +50,9 @@ export function Analytics() {
             </button>
           </div>
         `;
-        
+
         document.body.appendChild(successDiv);
-        
+
         // تصفير المبلغ المستحق
         // تحديث العنصر في DOM
         const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
@@ -65,7 +65,7 @@ export function Analytics() {
             }
           }
         });
-        
+
         document.getElementById('success-close')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
             document.body.removeChild(successDiv as Node);
@@ -74,7 +74,7 @@ export function Analytics() {
       } else if (type === 'partial' && paymentAction.amount) {
         // تسجيل دفع جزئي
         const { amount } = paymentAction;
-        
+
         successDiv = document.createElement('div');
         successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
         successDiv.innerHTML = `
@@ -92,9 +92,9 @@ export function Analytics() {
             </button>
           </div>
         `;
-        
+
         document.body.appendChild(successDiv);
-        
+
         // تحديث حالة الدفع الجزئي في DOM
         const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
         workerCards.forEach(card => {
@@ -106,7 +106,7 @@ export function Analytics() {
             }
           }
         });
-        
+
         document.getElementById('success-close')?.addEventListener('click', () => {
           document.body.removeChild(successDiv as Node);
         });
@@ -128,9 +128,9 @@ export function Analytics() {
             </button>
           </div>
         `;
-        
+
         document.body.appendChild(warningDiv);
-        
+
         // تحديث حالة الدفع في DOM
         const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
         workerCards.forEach(card => {
@@ -142,7 +142,7 @@ export function Analytics() {
             }
           }
         });
-        
+
         document.getElementById('warning-close')?.addEventListener('click', () => {
           document.body.removeChild(warningDiv as Node);
         });
@@ -150,7 +150,7 @@ export function Analytics() {
     } else if (paymentAction.partner) {
       // تسجيل دفع للشريك
       const { type, partner, partnerShare, amount } = paymentAction;
-      
+
       if (type === 'full') {
         // تسجيل دفع كامل للشريك
         successDiv = document.createElement('div');
@@ -169,9 +169,9 @@ export function Analytics() {
             </button>
           </div>
         `;
-        
+
         document.body.appendChild(successDiv);
-        
+
         // تحديث حالة الدفع في DOM
         const partnerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
         partnerCards.forEach(card => {
@@ -184,7 +184,7 @@ export function Analytics() {
             }
           }
         });
-        
+
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
             document.body.removeChild(successDiv as Node);
@@ -209,9 +209,9 @@ export function Analytics() {
             </button>
           </div>
         `;
-        
+
         document.body.appendChild(successDiv);
-        
+
         // تحديث حالة الدفع الجزئي في DOM
         const partnerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
         partnerCards.forEach(card => {
@@ -224,7 +224,7 @@ export function Analytics() {
             }
           }
         });
-        
+
         document.getElementById('success-close-partner')?.addEventListener('click', () => {
           if (document.body.contains(successDiv)) {
             document.body.removeChild(successDiv as Node);
@@ -232,12 +232,12 @@ export function Analytics() {
         });
       }
     }
-    
+
     // إعادة تعيين حالة الإجراء
     setPaymentAction(null);
     setShowPasswordConfirm(false);
   };
-  
+
   // تحديث الطلبات المفلترة عند تغيير الفلتر الزمني
   useEffect(() => {
     let filtered = orders;
@@ -256,14 +256,14 @@ export function Analytics() {
       const daysAgo = new Date(now.getTime() - parseInt(customDays) * 24 * 60 * 60 * 1000);
       filtered = orders.filter(order => new Date(order.date) >= daysAgo);
     }
-    
+
     setFilteredOrders(filtered);
   }, [orders, timeFilter, customDays]);
 
   const analyticsData = useMemo(() => {
 
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.price, 0);
-    
+
     // حساب إجمالي أرباح العمولة من خدمة الترويج
     const totalPromotionProfit = filteredOrders.reduce((sum, order) => {
       // إذا كان نوع الخدمة هو الترويج وهناك عمولة، نضيفها إلى الأرباح
@@ -280,7 +280,7 @@ export function Analytics() {
       const afterDiscount = order.price - (order.discount || 0);
       return sum + ((afterDiscount * (order.tax || 0)) / 100);
     }, 0);
-    
+
     // Worker shares calculation
     const workerShares: Record<string, number> = {};
     const totalWorkerShares = filteredOrders.reduce((sum, order) => {
@@ -326,7 +326,7 @@ export function Analytics() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 animate-bounce-in">
-            <img 
+            <img
               src="https://scontent.fosm4-2.fna.fbcdn.net/v/t39.30808-6/494646003_122103077492854376_4740803221172287157_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=8gnYz32ttRoQ7kNvwHVFH6B&_nc_oc=Adlg9De_-JOZZATh6rHCiNM4TwI6Qe55Da8iTvwoUW7AfUO98piKDr3i-3yy39pfSQA&_nc_pt=1&_nc_zt=23&_nc_ht=scontent.fosm4-2.fna&_nc_gid=m02mrNFC3RUiJRkPKNka1A&oh=00_AfWT_QZAIBnHVdxqpRk_ZI0KGj4cNRb9LjGtpmCkFag2PQ&oe=6897D9BA"
               alt="العين"
               className="w-full h-full rounded-full object-cover logo-frame"
@@ -335,7 +335,7 @@ export function Analytics() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-pink-600 bg-clip-text text-transparent mb-2">التحليلات والإحصائيات</h1>
           <p className="text-gray-600 dark:text-gray-400">تحليل شامل للأرباح والأداء المالي</p>
         </div>
-        
+
         {/* Time Filter */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-8 animate-slide-up">
           <div className="flex items-center gap-4 flex-wrap">
@@ -343,7 +343,7 @@ export function Analytics() {
               <Filter className="w-5 h-5 text-primary-500 ml-2" />
               <span className="text-sm font-bold text-gray-700 dark:text-gray-300">فترة التحليل:</span>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               {[
                 { value: 'all', label: 'الكل' },
@@ -355,17 +355,16 @@ export function Analytics() {
                 <button
                   key={option.value}
                   onClick={() => setTimeFilter(option.value)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 transform hover:scale-105 ${
-                    timeFilter === option.value
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 transform hover:scale-105 ${timeFilter === option.value
                       ? 'bg-primary-500 text-white shadow-lg'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
+                    }`}
                 >
                   {option.label}
                 </button>
               ))}
             </div>
-            
+
             {timeFilter === 'custom' && (
               <div className="flex items-center gap-2">
                 <input
@@ -455,7 +454,7 @@ export function Analytics() {
               </div>
               تفصيل الإيرادات
             </h3>
-            
+
             <div className="space-y-4">
               <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                 <span className="font-bold text-green-800 dark:text-green-200">إجمالي الإيرادات</span>
@@ -463,35 +462,35 @@ export function Analytics() {
                   +{analyticsData.totalRevenue.toLocaleString('ar-IQ')} د.ع
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
                 <span className="font-bold text-red-800 dark:text-red-200">إجمالي الخصومات</span>
                 <span className="font-bold text-red-600 dark:text-red-400 text-lg">
                   -{analyticsData.totalDiscounts.toLocaleString('ar-IQ')} د.ع
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                 <span className="font-bold text-blue-800 dark:text-blue-200">إجمالي الضرائب</span>
                 <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">
                   +{analyticsData.totalTax.toLocaleString('ar-IQ')} د.ع
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
                 <span className="font-bold text-orange-800 dark:text-orange-200">إجمالي مبلغ العمال</span>
                 <span className="font-bold text-orange-600 dark:text-orange-400 text-lg">
                   -{analyticsData.totalWorkerShares.toLocaleString('ar-IQ')} د.ع
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
                 <span className="font-bold text-purple-800 dark:text-purple-200">أرباح العمولة (الترويج)</span>
                 <span className="font-bold text-purple-600 dark:text-purple-400 text-lg">
                   +{analyticsData.totalPromotionProfit.toLocaleString('ar-IQ')} د.ع
                 </span>
               </div>
-              
+
               <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex justify-between items-center p-4 bg-gradient-to-r from-primary-50 to-pink-50 dark:from-primary-900/20 dark:to-pink-900/20 rounded-xl border-2 border-primary-200 dark:border-primary-800">
                   <span className="font-bold text-primary-800 dark:text-primary-200 text-lg">الربح الصافي</span>
@@ -511,7 +510,7 @@ export function Analytics() {
               </div>
               العمال
             </h3>
-            
+
             {Object.keys(analyticsData.workerShares).length === 0 ? (
               <div className="text-center py-8">
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -520,7 +519,7 @@ export function Analytics() {
             ) : (
               <div className="space-y-4">
                 {Object.entries(analyticsData.workerShares)
-                  .sort(([,a], [,b]) => b - a)
+                  .sort(([, a], [, b]) => b - a)
                   .map(([worker, share], index) => {
                     const percentage = analyticsData.totalWorkerShares > 0 ? (share / analyticsData.totalWorkerShares) * 100 : 0;
                     const colors = [
@@ -531,7 +530,7 @@ export function Analytics() {
                       'from-yellow-500 to-orange-500'
                     ];
                     const colorClass = colors[index % colors.length];
-                    
+
                     return (
                       <div key={worker} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 transform hover:scale-105 transition-all duration-300">
                         <div className="flex items-center justify-between mb-3">
@@ -553,34 +552,34 @@ export function Analytics() {
                           </div>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                          <div 
+                          <div
                             className={`bg-gradient-to-r ${colorClass} h-2 rounded-full transition-all duration-500`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
                         <div className="mt-2 flex justify-end">
-                          <button 
+                          <button
                             className="px-3 py-1 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 text-sm"
                             onClick={() => {
                               try {
                                 // تصفية الطلبات التي يعمل فيها هذا العامل
-                                const workerOrders = filteredOrders.filter(order => 
+                                const workerOrders = filteredOrders.filter(order =>
                                   order.workers && order.workers.some(w => w.name === worker)
                                 );
-                                
+
                                 // إنشاء عنصر div للنافذة المنبثقة
                                 const modalDiv = document.createElement('div');
                                 modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                                
+
                                 // حساب عدد الأعمال
                                 const orderCount = workerOrders.length;
-                                
+
                                 // حساب عدد العملاء الفريدين
                                 const uniqueCustomers = new Set(workerOrders.map(order => order.customerName)).size;
-                               
-                               // إنشاء محتوى تفاصيل الأعمال
+
+                                // إنشاء محتوى تفاصيل الأعمال
                                 let orderDetailsHTML = '';
-                                
+
                                 workerOrders.forEach((order, index) => {
                                   const workerInfo = order.workers.find(w => w.name === worker);
                                   if (workerInfo) {
@@ -599,8 +598,8 @@ export function Analytics() {
                                     `;
                                   }
                                 });
-                                
-                               // محتوى النافذة المنبثقة
+
+                                // محتوى النافذة المنبثقة
                                 modalDiv.innerHTML = `
                                   <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up max-h-[90vh] overflow-y-auto">
                                     <div class="flex justify-between items-center mb-6">
@@ -611,7 +610,7 @@ export function Analytics() {
                                         </svg>
                                       </button>
                                     </div>
-                                    
+
                                     <div class="flex items-center mb-6">
                                       <div class="w-16 h-16 bg-gradient-to-r ${colorClass} rounded-full flex items-center justify-center text-white text-2xl font-bold ml-4">
                                         ${worker.charAt(0)}
@@ -621,7 +620,7 @@ export function Analytics() {
                                         <p class="text-gray-600 dark:text-gray-400">إجمالي الحصة: ${share.toLocaleString('ar-IQ')} د.ع</p>
                                       </div>
                                     </div>
-                                    
+
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                       <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 text-center">
                                         <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">${orderCount}</p>
@@ -636,24 +635,24 @@ export function Analytics() {
                                         <p class="text-sm text-gray-600 dark:text-gray-400">نسبة من الإجمالي</p>
                                       </div>
                                     </div>
-                                    
+
                                     <h4 class="font-bold text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">تفاصيل الأعمال</h4>
                                     <div class="space-y-2">
                                       ${orderDetailsHTML || '<p class="text-center text-gray-500 dark:text-gray-400 py-4">لا توجد تفاصيل أعمال متاحة</p>'}
                                     </div>
                                   </div>
                                 `;
-                                
+
                                 // إضافة النافذة المنبثقة إلى الصفحة
                                 document.body.appendChild(modalDiv);
-                                
+
                                 // إضافة مستمع الحدث لزر الإغلاق
                                 document.getElementById('close-details-modal')?.addEventListener('click', () => {
                                   if (document.body.contains(modalDiv)) {
                                     document.body.removeChild(modalDiv);
                                   }
                                 });
-                                
+
                                 // إغلاق النافذة عند النقر خارجها
                                 modalDiv.addEventListener('click', (e) => {
                                   if (e.target === modalDiv && document.body.contains(modalDiv)) {
@@ -675,7 +674,7 @@ export function Analytics() {
               </div>
             )}
           </div>
-          
+
           {/* Worker Rights */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up mt-8">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
@@ -684,7 +683,7 @@ export function Analytics() {
               </div>
               حقوق العمال
             </h3>
-            
+
             {Object.keys(analyticsData.workerShares).length === 0 ? (
               <div className="text-center py-8">
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -693,7 +692,7 @@ export function Analytics() {
             ) : (
               <div className="space-y-4">
                 {Object.entries(analyticsData.workerShares)
-                  .sort(([,a], [,b]) => b - a)
+                  .sort(([, a], [, b]) => b - a)
                   .map(([worker, share], index) => {
                     const colors = [
                       'from-purple-500 to-indigo-500',
@@ -703,7 +702,7 @@ export function Analytics() {
                       'from-yellow-500 to-orange-500'
                     ];
                     const colorClass = colors[index % colors.length];
-                    
+
                     return (
                       <div key={worker} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 transform hover:scale-105 transition-all duration-300">
                         <div className="flex items-center justify-between mb-3">
@@ -719,13 +718,13 @@ export function Analytics() {
                             </div>
                           </div>
                           <div>
-                            <button 
+                            <button
                               className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 text-sm"
                               onClick={() => {
                                 // إنشاء عنصر div للنافذة المنبثقة
                                 const modalDiv = document.createElement('div');
                                 modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                                
+
                                 // محتوى النافذة المنبثقة
                                 modalDiv.innerHTML = `
                                   <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up">
@@ -737,7 +736,7 @@ export function Analytics() {
                                       <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">${worker}</p>
                                       <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${share.toLocaleString('ar-IQ')} د.ع</p>
                                     </div>
-                                    
+
                                     <div class="space-y-3 mb-6">
                                       <button id="pay-full" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -745,14 +744,14 @@ export function Analytics() {
                                         </svg>
                                         تم الدفع بالكامل
                                       </button>
-                                      
+
                                       <button id="pay-partial" class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                         </svg>
                                         تم دفع مبلغ جزئي
                                       </button>
-                                      
+
                                       <button id="pay-none" class="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -760,23 +759,23 @@ export function Analytics() {
                                         لم يتم الدفع
                                       </button>
                                     </div>
-                                    
+
                                     <button id="close-modal" class="w-full py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-bold transition-colors duration-200">
                                       إلغاء
                                     </button>
                                   </div>
                                 `;
-                                
+
                                 // إضافة النافذة المنبثقة إلى الصفحة
                                 document.body.appendChild(modalDiv);
-                                
+
                                 // إضافة مستمعي الأحداث للأزرار
                                 document.getElementById('pay-full')?.addEventListener('click', () => {
                                   // إزالة النافذة المنبثقة
                                   if (document.body.contains(modalDiv)) {
                                     document.body.removeChild(modalDiv);
                                   }
-                                  
+
                                   // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                                   setPaymentAction({
                                     type: 'full',
@@ -784,7 +783,7 @@ export function Analytics() {
                                     share
                                   });
                                   setShowPasswordConfirm(true);
-                                  
+
                                   // تصفير المبلغ المستحق
                                   // تحديث العنصر في DOM
                                   const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
@@ -797,12 +796,8 @@ export function Analytics() {
                                       }
                                     }
                                   });
-                                  
-                                  document.getElementById('success-close')?.addEventListener('click', () => {
-                                    document.body.removeChild(successDiv);
-                                  });
                                 });
-                                
+
                                 document.getElementById('pay-partial')?.addEventListener('click', () => {
                                   // إنشاء نافذة إدخال المبلغ
                                   const amountDiv = document.createElement('div');
@@ -811,12 +806,12 @@ export function Analytics() {
                                     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up">
                                       <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 text-center">تسجيل دفع جزئي</h3>
                                       <p class="text-gray-600 dark:text-gray-400 mb-4 text-center">المبلغ المستحق: ${share.toLocaleString('ar-IQ')} د.ع</p>
-                                      
+
                                       <div class="mb-4">
                                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">المبلغ المدفوع:</label>
                                         <input type="number" id="partial-amount" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="أدخل المبلغ المدفوع" />
                                       </div>
-                                      
+
                                       <div class="flex gap-3">
                                         <button id="confirm-partial" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
                                           تأكيد
@@ -827,24 +822,24 @@ export function Analytics() {
                                       </div>
                                     </div>
                                   `;
-                                  
+
                                   document.body.removeChild(modalDiv);
                                   document.body.appendChild(amountDiv);
-                                  
+
                                   document.getElementById('confirm-partial')?.addEventListener('click', () => {
                                     const amountInput = document.getElementById('partial-amount') as HTMLInputElement;
                                     const amount = parseFloat(amountInput.value);
-                                    
+
                                     if (isNaN(amount) || amount <= 0 || amount > share) {
                                       alert('الرجاء إدخال مبلغ صحيح (أكبر من صفر وأقل من أو يساوي المبلغ المستحق)');
                                       return;
                                     }
-                                    
+
                                     // إزالة النافذة المنبثقة
                                     if (document.body.contains(amountDiv)) {
                                       document.body.removeChild(amountDiv);
                                     }
-                                    
+
                                     // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                                     setPaymentAction({
                                       type: 'partial',
@@ -853,7 +848,7 @@ export function Analytics() {
                                       amount
                                     });
                                     setShowPasswordConfirm(true);
-                                    
+
                                     // تحديث حالة الدفع الجزئي في DOM
                                     const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
                                     workerCards.forEach(card => {
@@ -865,25 +860,21 @@ export function Analytics() {
                                         }
                                       }
                                     });
-                                    
-                                    document.getElementById('success-close')?.addEventListener('click', () => {
-                                      document.body.removeChild(successDiv);
-                                    });
                                   });
-                                  
+
                                   document.getElementById('cancel-partial')?.addEventListener('click', () => {
                                     if (document.body.contains(amountDiv)) {
                                       document.body.removeChild(amountDiv);
                                     }
                                   });
                                 });
-                                
+
                                 document.getElementById('pay-none')?.addEventListener('click', () => {
                                   // إزالة النافذة المنبثقة
                                   if (document.body.contains(modalDiv)) {
                                     document.body.removeChild(modalDiv);
                                   }
-                                  
+
                                   // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                                   setPaymentAction({
                                     type: 'none',
@@ -891,7 +882,7 @@ export function Analytics() {
                                     share
                                   });
                                   setShowPasswordConfirm(true);
-                                  
+
                                   // تحديث حالة الدفع في DOM
                                   const workerCards = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700.rounded-xl.p-4');
                                   workerCards.forEach(card => {
@@ -903,12 +894,8 @@ export function Analytics() {
                                       }
                                     }
                                   });
-                                  
-                                  document.getElementById('warning-close')?.addEventListener('click', () => {
-                                    document.body.removeChild(warningDiv);
-                                  });
                                 });
-                                
+
                                 document.getElementById('close-modal')?.addEventListener('click', () => {
                                   document.body.removeChild(modalDiv);
                                 });
@@ -934,12 +921,12 @@ export function Analytics() {
             </div>
             الشركاء
           </h3>
-          
+
           <div className="mb-4">
             <p className="text-gray-600 dark:text-gray-400 mb-2">الأرباح الصافية: {analyticsData.netProfit.toLocaleString('ar-IQ')} د.ع</p>
             <p className="text-gray-600 dark:text-gray-400 mb-4">حصة كل شريك: {(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Partner 1: عبدالله */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-5 border border-blue-100 dark:border-blue-900/30 shadow-sm">
@@ -956,13 +943,12 @@ export function Analytics() {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">الحصة من الأرباح:</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
               </div>
-              <button 
+              <button
                 className="w-full py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 font-bold flex items-center justify-center"
                 onClick={() => {
                   // إنشاء عنصر div للنافذة المنبثقة
                   const modalDiv = document.createElement('div');
                   modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                  
                   // محتوى النافذة المنبثقة
                   modalDiv.innerHTML = `
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up">
@@ -974,7 +960,6 @@ export function Analytics() {
                         <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">عبدالله</p>
                         <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
                       </div>
-                      
                       <div class="space-y-3 mb-6">
                         <button id="pay-full-partner1" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -982,14 +967,12 @@ export function Analytics() {
                           </svg>
                           تم الدفع بالكامل
                         </button>
-                        
                         <button id="pay-partial-partner1" class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
                           تم دفع مبلغ جزئي
                         </button>
-                        
                         <button id="pay-none-partner1" class="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -997,78 +980,55 @@ export function Analytics() {
                           لم يتم الدفع
                         </button>
                       </div>
-                      
                       <button id="close-modal-partner1" class="w-full py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-bold transition-colors duration-200">
                         إلغاء
                       </button>
                     </div>
                   `;
-                  
                   // إضافة النافذة المنبثقة إلى الصفحة
                   document.body.appendChild(modalDiv);
-                  
                   // إضافة مستمعي الأحداث للأزرار
                   document.getElementById('pay-full-partner1')?.addEventListener('click', () => {
-                    // إزالة النافذة المنبثقة
                     document.body.removeChild(modalDiv);
-                    
-                    // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                     setPaymentAction({
                       type: 'full',
                       partner: 'عبدالله',
                       partnerShare: analyticsData.netProfit / 3
                     });
                     setShowPasswordConfirm(true);
-                    
                   });
-                  
-                  // إضافة وظيفة الدفع الجزئي للشريك
                   document.getElementById('pay-partial-partner1')?.addEventListener('click', () => {
-                    // إنشاء نافذة إدخال المبلغ
                     const amountDiv = document.createElement('div');
                     amountDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
                     amountDiv.innerHTML = `
                       <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 text-center">تسجيل دفع جزئي</h3>
                         <p class="text-gray-600 dark:text-gray-400 mb-4 text-center">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
-                        
                         <div class="mb-4">
                           <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">المبلغ المدفوع:</label>
                           <input type="number" id="partial-amount-partner1" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="أدخل المبلغ المدفوع" />
                         </div>
-                        
                         <div class="flex gap-3">
-                          <button id="confirm-partial-partner1" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
-                            تأكيد
-                          </button>
-                          <button id="cancel-partial-partner1" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-bold transition-colors duration-200">
-                            إلغاء
-                          </button>
+                          <button id="confirm-partial-partner1" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">تأكيد</button>
+                          <button id="cancel-partial-partner1" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-bold transition-colors duration-200">إلغاء</button>
                         </div>
                       </div>
                     `;
-                    
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
                     }
                     document.body.appendChild(amountDiv);
-                    
                     document.getElementById('confirm-partial-partner1')?.addEventListener('click', () => {
                       const amountInput = document.getElementById('partial-amount-partner1') as HTMLInputElement;
                       const amount = parseFloat(amountInput.value);
                       const partnerShare = analyticsData.netProfit / 3;
-                      
                       if (isNaN(amount) || amount <= 0 || amount > partnerShare) {
                         alert('الرجاء إدخال مبلغ صحيح (أكبر من صفر وأقل من أو يساوي المبلغ المستحق)');
                         return;
                       }
-                      
-                      // إزالة النافذة المنبثقة
                       if (document.body.contains(amountDiv)) {
                         document.body.removeChild(amountDiv);
                       }
-                      
-                      // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                       setPaymentAction({
                         type: 'partial',
                         partner: 'عبدالله',
@@ -1076,16 +1036,12 @@ export function Analytics() {
                         amount
                       });
                       setShowPasswordConfirm(true);
-                      });
                     });
-                    
                     document.getElementById('cancel-partial-partner1')?.addEventListener('click', () => {
                       document.body.removeChild(amountDiv);
                     });
-                   
-                  // إضافة وظيفة عدم الدفع للشريك
+                  });
                   document.getElementById('pay-none-partner1')?.addEventListener('click', () => {
-                    // إظهار رسالة تنبيه
                     const warningDiv = document.createElement('div');
                     warningDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
                     warningDiv.innerHTML = `
@@ -1097,18 +1053,13 @@ export function Analytics() {
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تنبيه: لم يتم الدفع</h3>
                         <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع مستحقات الشريك عبدالله البالغة ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
-                        <button id="warning-close-partner1" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
-                          حسناً
-                        </button>
+                        <button id="warning-close-partner1" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">حسناً</button>
                       </div>
                     `;
-                    
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
                     }
                     document.body.appendChild(warningDiv);
-                    
-                    // تحديث حالة عدم الدفع في DOM
                     const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
                     partnerCards.forEach(card => {
                       const nameElement = card.querySelector('h4.text-lg.font-bold');
@@ -1119,36 +1070,26 @@ export function Analytics() {
                         }
                       }
                     });
-                    
                     document.getElementById('warning-close-partner1')?.addEventListener('click', () => {
                       if (document.body.contains(warningDiv)) {
                         document.body.removeChild(warningDiv);
                       }
                     });
-                    
+                  });
                   document.getElementById('close-modal-partner1')?.addEventListener('click', () => {
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
                     }
                   });
-                });
-              }}
-            >
-              <button 
-                className="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold"
-                onClick={() => {
-                  // إظهار النافذة المنبثقة لتسجيل الدفع
-                  const modalDiv = document.createElement('div');
-                  modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                  document.body.appendChild(modalDiv);
                 }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                {`تسجيل الدفع`}
+                تسجيل الدفع
               </button>
-            
+            </div>
+
             {/* Partner 2: عياش */}
             <div className="bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-xl p-5 border border-green-100 dark:border-green-900/30 shadow-sm">
               <div className="flex items-center mb-4">
@@ -1164,13 +1105,11 @@ export function Analytics() {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">الحصة من الأرباح:</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
               </div>
-              <button 
+              <button
                 className="w-full py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-200 font-bold flex items-center justify-center"
                 onClick={() => {
-                  // نفس منطق النافذة المنبثقة للشريك الأول مع تغيير المعرفات والاسم
                   const modalDiv = document.createElement('div');
                   modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                  
                   modalDiv.innerHTML = `
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up">
                       <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 text-center">تسجيل دفع مستحقات</h3>
@@ -1181,7 +1120,6 @@ export function Analytics() {
                         <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">عياش</p>
                         <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
                       </div>
-                      
                       <div class="space-y-3 mb-6">
                         <button id="pay-full-partner2" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1189,14 +1127,12 @@ export function Analytics() {
                           </svg>
                           تم الدفع بالكامل
                         </button>
-                        
                         <button id="pay-partial-partner2" class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
                           تم دفع مبلغ جزئي
                         </button>
-                        
                         <button id="pay-none-partner2" class="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -1204,72 +1140,49 @@ export function Analytics() {
                           لم يتم الدفع
                         </button>
                       </div>
-                      
                       <button id="close-modal-partner2" class="w-full py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-bold transition-colors duration-200">
                         إلغاء
                       </button>
                     </div>
                   `;
-                  
                   document.body.appendChild(modalDiv);
-                  
                   document.getElementById('pay-full-partner2')?.addEventListener('click', () => {
-                    // إزالة النافذة المنبثقة
                     document.body.removeChild(modalDiv);
-                    
-                    // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                     setPaymentAction({
                       type: 'full',
                       partner: 'عياش',
                       partnerShare: analyticsData.netProfit / 3
                     });
                     setShowPasswordConfirm(true);
-                    
                   });
-                  
-                  // إضافة وظيفة الدفع الجزئي للشريك
                   document.getElementById('pay-partial-partner2')?.addEventListener('click', () => {
-                    // إنشاء نافذة إدخال المبلغ
                     const amountDiv = document.createElement('div');
                     amountDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
                     amountDiv.innerHTML = `
                       <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 text-center">تسجيل دفع جزئي</h3>
                         <p class="text-gray-600 dark:text-gray-400 mb-4 text-center">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
-                        
                         <div class="mb-4">
                           <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">المبلغ المدفوع:</label>
                           <input type="number" id="partial-amount-partner2" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="أدخل المبلغ المدفوع" />
                         </div>
-                        
                         <div class="flex gap-3">
-                          <button id="confirm-partial-partner2" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">
-                            تأكيد
-                          </button>
-                          <button id="cancel-partial-partner2" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-bold transition-colors duration-200">
-                            إلغاء
-                          </button>
+                          <button id="confirm-partial-partner2" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">تأكيد</button>
+                          <button id="cancel-partial-partner2" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-bold transition-colors duration-200">إلغاء</button>
                         </div>
                       </div>
                     `;
-                    
                     document.body.removeChild(modalDiv);
                     document.body.appendChild(amountDiv);
-                    
                     document.getElementById('confirm-partial-partner2')?.addEventListener('click', () => {
                       const amountInput = document.getElementById('partial-amount-partner2') as HTMLInputElement;
                       const amount = parseFloat(amountInput.value);
                       const partnerShare = analyticsData.netProfit / 3;
-                      
                       if (isNaN(amount) || amount <= 0 || amount > partnerShare) {
                         alert('الرجاء إدخال مبلغ صحيح (أكبر من صفر وأقل من أو يساوي المبلغ المستحق)');
                         return;
                       }
-                      
-                      // إزالة النافذة المنبثقة
                       document.body.removeChild(amountDiv);
-                      
-                      // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                       setPaymentAction({
                         type: 'partial',
                         partner: 'عياش',
@@ -1278,15 +1191,11 @@ export function Analytics() {
                       });
                       setShowPasswordConfirm(true);
                     });
-                    
                     document.getElementById('cancel-partial-partner2')?.addEventListener('click', () => {
                       document.body.removeChild(amountDiv);
                     });
                   });
-                  
-                  // إضافة وظيفة عدم الدفع للشريك
                   document.getElementById('pay-none-partner2')?.addEventListener('click', () => {
-                    // إظهار رسالة تنبيه
                     const warningDiv = document.createElement('div');
                     warningDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
                     warningDiv.innerHTML = `
@@ -1298,18 +1207,13 @@ export function Analytics() {
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">تنبيه: لم يتم الدفع</h3>
                         <p class="text-gray-600 dark:text-gray-400 mb-6">تم تسجيل عدم دفع مستحقات الشريك عياش البالغة ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
-                        <button id="warning-close-partner2" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
-                          حسناً
-                        </button>
+                        <button id="warning-close-partner2" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">حسناً</button>
                       </div>
                     `;
-                    
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
                     }
                     document.body.appendChild(warningDiv);
-                    
-                    // تحديث حالة عدم الدفع في DOM
                     const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
                     partnerCards.forEach(card => {
                       const nameElement = card.querySelector('h4.text-lg.font-bold');
@@ -1320,14 +1224,12 @@ export function Analytics() {
                         }
                       }
                     });
-                    
                     document.getElementById('warning-close-partner2')?.addEventListener('click', () => {
                       if (document.body.contains(warningDiv)) {
                         document.body.removeChild(warningDiv);
                       }
                     });
                   });
-                  
                   document.getElementById('close-modal-partner2')?.addEventListener('click', () => {
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
@@ -1341,7 +1243,7 @@ export function Analytics() {
                 تسجيل الدفع
               </button>
             </div>
-            
+
             {/* Partner 3: زهراء */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-5 border border-purple-100 dark:border-purple-900/30 shadow-sm">
               <div className="flex items-center mb-4">
@@ -1357,13 +1259,11 @@ export function Analytics() {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">الحصة من الأرباح:</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
               </div>
-              <button 
+              <button
                 className="w-full py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 font-bold flex items-center justify-center"
                 onClick={() => {
-                  // نفس منطق النافذة المنبثقة للشركاء السابقين مع تغيير المعرفات والاسم
                   const modalDiv = document.createElement('div');
                   modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                  
                   modalDiv.innerHTML = `
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up">
                       <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 text-center">تسجيل دفع مستحقات</h3>
@@ -1374,7 +1274,6 @@ export function Analytics() {
                         <p class="mt-2 text-lg font-bold text-gray-900 dark:text-white">زهراء</p>
                         <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
                       </div>
-                      
                       <div class="space-y-3 mb-6">
                         <button id="pay-full-partner3" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1382,14 +1281,12 @@ export function Analytics() {
                           </svg>
                           تم الدفع بالكامل
                         </button>
-                        
                         <button id="pay-partial-partner3" class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
                           تم دفع مبلغ جزئي
                         </button>
-                        
                         <button id="pay-none-partner3" class="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -1397,19 +1294,14 @@ export function Analytics() {
                           لم يتم الدفع
                         </button>
                       </div>
-                      
                       <button id="close-modal-partner3" class="w-full py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-bold transition-colors duration-200">
                         إلغاء
                       </button>
                     </div>
                   `;
-                  
                   document.body.appendChild(modalDiv);
-                  
                   document.getElementById('pay-full-partner3')?.addEventListener('click', () => {
                     document.body.removeChild(modalDiv);
-                    
-                    // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                     setPaymentAction({
                       type: 'full',
                       partner: 'زهراء',
@@ -1417,8 +1309,6 @@ export function Analytics() {
                     });
                     setShowPasswordConfirm(true);
                   });
-                  
-                  // إضافة وظيفة الدفع الجزئي
                   document.getElementById('pay-partial-partner3')?.addEventListener('click', () => {
                     const partialModalDiv = document.createElement('div');
                     partialModalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -1428,30 +1318,25 @@ export function Analytics() {
                         <div class="text-center mb-4">
                           <p class="text-gray-600 dark:text-gray-400">المبلغ المستحق: ${(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
                         </div>
-                        
                         <div class="mb-4">
                           <label class="block text-gray-700 dark:text-gray-300 mb-2">المبلغ المدفوع:</label>
                           <input type="number" id="partial-amount-partner3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" placeholder="أدخل المبلغ المدفوع" />
                           <p id="amount-error-partner3" class="text-red-500 text-sm mt-1 hidden">يرجى إدخال مبلغ صحيح</p>
                         </div>
-                        
                         <div class="flex space-x-3 rtl:space-x-reverse">
                           <button id="confirm-partial-partner3" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-bold">تأكيد</button>
                           <button id="cancel-partial-partner3" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition-colors duration-200 font-bold">إلغاء</button>
                         </div>
                       </div>
                     `;
-                    
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
                     }
                     document.body.appendChild(partialModalDiv);
-                    
                     document.getElementById('confirm-partial-partner3')?.addEventListener('click', () => {
                       const partialAmountInput = document.getElementById('partial-amount-partner3') as HTMLInputElement;
                       const partialAmount = parseFloat(partialAmountInput.value);
                       const totalAmount = analyticsData.netProfit / 3;
-                      
                       if (isNaN(partialAmount) || partialAmount <= 0 || partialAmount > totalAmount) {
                         const errorElement = document.getElementById('amount-error-partner3');
                         if (errorElement) {
@@ -1459,12 +1344,9 @@ export function Analytics() {
                         }
                         return;
                       }
-                      
                       if (document.body.contains(partialModalDiv)) {
                         document.body.removeChild(partialModalDiv);
                       }
-                      
-                      // تعيين إجراء الدفع وعرض نافذة التحقق من كلمة المرور
                       setPaymentAction({
                         type: 'partial',
                         partner: 'زهراء',
@@ -1472,17 +1354,12 @@ export function Analytics() {
                         amount: partialAmount
                       });
                       setShowPasswordConfirm(true);
-                      
-
                     });
-                    
                     document.getElementById('cancel-partial-partner3')?.addEventListener('click', () => {
                       document.body.removeChild(partialModalDiv);
                       document.body.appendChild(modalDiv);
                     });
                   });
-                  
-                  // إضافة وظيفة عدم الدفع
                   document.getElementById('pay-none-partner3')?.addEventListener('click', () => {
                     const warningDiv = document.createElement('div');
                     warningDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -1500,13 +1377,10 @@ export function Analytics() {
                         </button>
                       </div>
                     `;
-                    
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
                     }
                     document.body.appendChild(warningDiv);
-                    
-                    // تحديث حالة عدم الدفع في DOM
                     const partnerCards = document.querySelectorAll('.bg-gradient-to-br');
                     partnerCards.forEach(card => {
                       const nameElement = card.querySelector('h4.text-lg.font-bold');
@@ -1517,14 +1391,12 @@ export function Analytics() {
                         }
                       }
                     });
-                    
                     document.getElementById('warning-close-partner3')?.addEventListener('click', () => {
                       if (document.body.contains(warningDiv)) {
                         document.body.removeChild(warningDiv);
                       }
                     });
                   });
-                  
                   document.getElementById('close-modal-partner3')?.addEventListener('click', () => {
                     if (document.body.contains(modalDiv)) {
                       document.body.removeChild(modalDiv);
@@ -1540,7 +1412,7 @@ export function Analytics() {
             </div>
           </div>
         </div>
-        
+
         {/* Additional Stats */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
@@ -1549,7 +1421,7 @@ export function Analytics() {
             </div>
             إحصائيات إضافية
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="text-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
               <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">
@@ -1557,7 +1429,7 @@ export function Analytics() {
               </div>
               <p className="text-sm font-bold text-indigo-800 dark:text-indigo-200">عدد العمال النشطين</p>
             </div>
-            
+
             <div className="text-center p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl border border-rose-200 dark:border-rose-800">
               <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 mb-2">
                 {analyticsData.totalRevenue > 0 ? ((analyticsData.totalDiscounts / analyticsData.totalRevenue) * 100).toFixed(1) : '0'}%
@@ -1567,7 +1439,7 @@ export function Analytics() {
           </div>
         </div>
       </div>
-      
+
       {/* مكون التحقق من كلمة المرور */}
       {showPasswordConfirm && (
         <PasswordConfirm
@@ -1577,60 +1449,8 @@ export function Analytics() {
             setPaymentAction(null);
           }}
           actionType="payment"
-        />  
-      )}      // Replace the partner button code block with the following:
-      <button 
-          className="w-full py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 font-bold flex items-center justify-center"
-          onClick={() => {
-              // إنشاء عنصر div للنافذة المنبثقة
-              const modalDiv = document.createElement('div');
-              modalDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-              
-              // محتوى النافذة المنبثقة
-              // (أضف هنا المحتوى المطلوب للنافذة المنبثقة)
-          }}
-      >
-        عرض التفاصيل
-      </button>      // In the Worker Performance section mapping, update the empty return:
-      {Object.entries(analyticsData.workerShares)
-        .sort(([, a], [, b]) => b - a)
-        .map(([worker, share], index) => {
-          const percentage = analyticsData.totalWorkerShares > 0 ? (share / analyticsData.totalWorkerShares) * 100 : 0;
-          const colors = [
-            'from-blue-500 to-cyan-500',
-            'from-green-500 to-emerald-500',
-            'from-purple-500 to-indigo-500',
-            'from-pink-500 to-rose-500',
-            'from-yellow-500 to-orange-500'
-          ];
-          const colorClass = colors[index % colors.length];
-          
-          return (
-            <div key={worker} className={`p-4 bg-gradient-to-r ${colorClass} rounded-xl text-white`}>
-              <p className="font-bold">{worker}: {share.toLocaleString('ar-IQ')} د.ع</p>
-              <p className="text-sm">{percentage.toFixed(2)}%</p>
-            </div>
-          );
-        })}        // Similarly, update the Worker Rights section mapping:
-        {Object.entries(analyticsData.workerShares)
-          .sort(([, a], [, b]) => b - a)
-          .map(([worker, share], index) => {
-            const colors = [
-              'from-purple-500 to-indigo-500',
-              'from-green-500 to-emerald-500',
-              'from-blue-500 to-cyan-500',
-              'from-pink-500 to-rose-500',
-              'from-yellow-500 to-orange-500'
-            ];
-            const colorClass = colors[index % colors.length];
-            
-            return (
-              <div key={worker} className={`p-4 bg-gradient-to-r ${colorClass} rounded-xl text-white`}>
-                <p className="font-bold">{worker}</p>
-                <p className="text-sm">حقوق: {share.toLocaleString('ar-IQ')} د.ع</p>
-              </div>
-            );
-          })}
+        />
+      )}
     </div>
   );
 }
