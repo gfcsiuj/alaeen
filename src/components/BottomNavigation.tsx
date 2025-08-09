@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, FileText, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Plus, FileText, BarChart3, Settings, LogOut, DollarSign } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 
 interface BottomNavigationProps {
@@ -15,6 +15,7 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
     ...(userRole === 'admin' ? [{ id: 'add', label: 'إضافة طلب', icon: Plus }] : []),
     { id: 'orders', label: 'الطلبات', icon: FileText },
     { id: 'analytics', label: 'التحليلات', icon: BarChart3 },
+    { id: 'payments', label: 'المدفوعات', icon: DollarSign },
     { id: 'settings', label: 'الإعدادات', icon: Settings },
   ];
   

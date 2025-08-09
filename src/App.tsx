@@ -8,6 +8,7 @@ import { Settings } from './components/Settings';
 import { PinLogin } from './components/PinLogin';
 import { LoginScreen } from './components/LoginScreen';
 import { Loader } from './components/Loader';
+import { PaymentHistory } from './components/PaymentHistory';
 
 function AppContent() {
   const { settings, isAuthenticated, userRole } = useApp();
@@ -51,6 +52,8 @@ function AppContent() {
         return <OrderList />;
       case 'analytics':
         return <Analytics />;
+      case 'payments':
+        return <PaymentHistory />;
       case 'settings':
         return <Settings />;
       default:

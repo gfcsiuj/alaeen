@@ -1,13 +1,21 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { TrendingUp, Users, DollarSign, Calendar, Filter, PieChart, BarChart3, Target } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Calendar, Filter, PieChart, BarChart3, Target, ClipboardList } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { PasswordConfirm } from './PasswordConfirm';
+import { addPayment } from '../firebase/paymentService';
+import { useNavigate } from 'react-router-dom';
 
 export function Analytics() {
-  const { orders } = useApp();
+  const { orders, userRole } = useApp();
+  const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState('all');
   const [customDays, setCustomDays] = useState('7');
   const [filteredOrders, setFilteredOrders] = useState(orders);
+  
+  // دالة للانتقال إلى صفحة سجل المدفوعات
+  const goToPaymentHistory = () => {
+    navigate('/payments');
+  };
 
   // حالات للتحقق من كلمة المرور
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
@@ -21,18 +29,61 @@ export function Analytics() {
   } | null>(null);
 
   // دالة تنفيذ عملية تسجيل الدفع بعد التحقق من كلمة المرور
-  const executePaymentAction = () => {
+  const executePaymentAction = async () => {
     if (!paymentAction) return;
+    
+    // إنشاء عنصر تحذير إذا كان المستخدم مشاهد
+    if (userRole === 'viewer') {
+      const warningDiv = document.createElement('div');
+      warningDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      warningDiv.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+          <div class="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">لا يمكنك تسجيل الدفع</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">ليس لديك صلاحية لتسجيل المدفوعات في وضع المشاهدة</p>
+          <button id="warning-close" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
+            حسناً
+          </button>
+        </div>
+      `;
+
+      document.body.appendChild(warningDiv);
+
+      document.getElementById('warning-close')?.addEventListener('click', () => {
+        document.body.removeChild(warningDiv as Node);
+      });
+      
+      // إعادة تعيين حالة الإجراء
+      setPaymentAction(null);
+      setShowPasswordConfirm(false);
+      return;
+    }
 
     // إنشاء العناصر المطلوبة للعرض
     let successDiv, warningDiv;
 
-    // تنفيذ الإجراء المناسب بناءً على نوع العملية
-    if (paymentAction.worker) {
-      // تسجيل دفع للعامل
-      const { type, worker, share } = paymentAction;
+    try {
+      // تنفيذ الإجراء المناسب بناءً على نوع العملية
+      if (paymentAction.worker) {
+        // تسجيل دفع للعامل
+        const { type, worker, share } = paymentAction;
+        
+        // تسجيل الدفع في Firebase
+        await addPayment({
+          type: 'worker',
+          recipientName: worker,
+          amount: type === 'full' ? share! : (paymentAction.amount || 0),
+          paymentType: type,
+          date: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          createdBy: userRole
+        });
 
-      if (type === 'full') {
+        if (type === 'full') {
         // تسجيل دفع كامل
         successDiv = document.createElement('div');
         successDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -150,6 +201,17 @@ export function Analytics() {
     } else if (paymentAction.partner) {
       // تسجيل دفع للشريك
       const { type, partner, partnerShare, amount } = paymentAction;
+      
+      // تسجيل الدفع في Firebase
+      await addPayment({
+        type: 'partner',
+        recipientName: partner,
+        amount: type === 'full' ? partnerShare! : (amount || 0),
+        paymentType: type,
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        createdBy: userRole
+      });
 
       if (type === 'full') {
         // تسجيل دفع كامل للشريك
@@ -236,6 +298,37 @@ export function Analytics() {
     // إعادة تعيين حالة الإجراء
     setPaymentAction(null);
     setShowPasswordConfirm(false);
+    } catch (error) {
+      console.error('خطأ في تسجيل الدفع:', error);
+      
+      // عرض رسالة خطأ للمستخدم
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      errorDiv.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+          <div class="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">خطأ في تسجيل الدفع</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">حدث خطأ أثناء تسجيل الدفع في قاعدة البيانات. يرجى المحاولة مرة أخرى.</p>
+          <button id="error-close" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
+            حسناً
+          </button>
+        </div>
+      `;
+
+      document.body.appendChild(errorDiv);
+
+      document.getElementById('error-close')?.addEventListener('click', () => {
+        document.body.removeChild(errorDiv as Node);
+      });
+      
+      // إعادة تعيين حالة الإجراء
+      setPaymentAction(null);
+      setShowPasswordConfirm(false);
+    }
   };
 
   // تحديث الطلبات المفلترة عند تغيير الفلتر الزمني
@@ -445,17 +538,17 @@ export function Analytics() {
         </div>
 
         {/* Financial Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Revenue Breakdown */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-              <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-                <PieChart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              </div>
-              تفصيل الإيرادات
-            </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Revenue Breakdown */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
+                  <PieChart className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                </div>
+                تفصيل الإيرادات
+              </h3>
 
-            <div className="space-y-4">
+              <div className="space-y-4">
               <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                 <span className="font-bold text-green-800 dark:text-green-200">إجمالي الإيرادات</span>
                 <span className="font-bold text-green-600 dark:text-green-400 text-lg">
@@ -913,19 +1006,35 @@ export function Analytics() {
           </div>
         </div>
 
-        {/* Partners Section */}
+        {/* Stats Section */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up mb-8">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-            <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-              <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-            الشركاء
-          </h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+              <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
+                <TrendingUp className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              </div>
+              الإحصائيات
+            </h3>
+            <button
+              onClick={goToPaymentHistory}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/40 transition-colors"
+            >
+              <ClipboardList className="w-4 h-4" />
+              سجل المدفوعات
+            </button>
+          </div>
 
           <div className="mb-4">
             <p className="text-gray-600 dark:text-gray-400 mb-2">الأرباح الصافية: {analyticsData.netProfit.toLocaleString('ar-IQ')} د.ع</p>
             <p className="text-gray-600 dark:text-gray-400 mb-4">حصة كل شريك: {(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
           </div>
+          
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center ml-3">
+              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            الشركاء
+          </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Partner 1: عبدالله */}

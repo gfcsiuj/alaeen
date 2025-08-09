@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import React from 'react';
+import { useApp } from '../contexts/AppContext';
 
 interface PasswordConfirmProps {
   onConfirm: () => void;
@@ -8,13 +8,8 @@ interface PasswordConfirmProps {
 }
 
 export function PasswordConfirm({ onConfirm, onCancel, actionType }: PasswordConfirmProps) {
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-
-  // كلمة المرور المطلوبة
-  const REQUIRED_PASSWORD = 'استغفرالله؟';
-
+  const { userRole } = useApp();
+  
   // نص العملية حسب النوع
   const getActionText = () => {
     switch (actionType) {
@@ -33,67 +28,66 @@ export function PasswordConfirm({ onConfirm, onCancel, actionType }: PasswordCon
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === REQUIRED_PASSWORD) {
-      onConfirm();
-      setError('');
-    } else {
-      setError('كلمة المرور غير صحيحة');
+  // التحقق من صلاحيات المستخدم
+  const handleConfirm = () => {
+    // إذا كان المستخدم مشاهد وحاول تسجيل دفع، نمنعه
+    if (userRole === 'viewer' && actionType === 'payment') {
+      // إنشاء عنصر تحذير
+      const warningDiv = document.createElement('div');
+      warningDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      warningDiv.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 animate-slide-up text-center">
+          <div class="w-20 h-20 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">لا يمكنك تسجيل الدفع</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">ليس لديك صلاحية لتسجيل المدفوعات في وضع المشاهدة</p>
+          <button id="warning-close" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 font-bold">
+            حسناً
+          </button>
+        </div>
+      `;
+
+      document.body.appendChild(warningDiv);
+
+      document.getElementById('warning-close')?.addEventListener('click', () => {
+        document.body.removeChild(warningDiv as Node);
+      });
+      
+      onCancel();
+      return;
     }
+    
+    // تنفيذ العملية مباشرة بدون طلب كلمة المرور
+    onConfirm();
   };
 
+  // عرض شاشة تأكيد بسيطة بدلاً من شاشة كلمة المرور
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center bg-primary-100 dark:bg-gray-700 rounded-full">
-            <Lock className="w-8 h-8 text-primary-500 dark:text-primary-400" />
-          </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{getActionText()}</h2>
-          <p className="text-gray-600 dark:text-gray-400">أدخل كلمة المرور للمتابعة</p>
+          <p className="text-gray-600 dark:text-gray-400">هل أنت متأكد من رغبتك في {getActionText()}؟</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="كلمة المرور"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-lg transition-all duration-300"
-              dir="rtl"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
-
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
-
-          <div className="flex space-x-3 space-x-reverse rtl:space-x-reverse">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="w-1/2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-3 px-4 rounded-lg font-medium transition-all duration-300"
-            >
-              إلغاء
-            </button>
-            <button
-              type="submit"
-              className="w-1/2 bg-primary-500 hover:bg-primary-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300"
-            >
-              تأكيد
-            </button>
-          </div>
-        </form>
+        <div className="flex space-x-3 space-x-reverse rtl:space-x-reverse">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-1/2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-3 px-4 rounded-lg font-medium transition-all duration-300"
+          >
+            إلغاء
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="w-1/2 bg-primary-500 hover:bg-primary-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300"
+          >
+            تأكيد
+          </button>
+        </div>
       </div>
     </div>
   );
