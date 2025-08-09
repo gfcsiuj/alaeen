@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X, Users, Percent, Calculator, AlertCircle, Star, Camera, Printer, Megaphone, Palette, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { Order } from '../types';
