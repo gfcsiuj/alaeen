@@ -540,11 +540,34 @@ export function Analytics() {
 
         {/* Stats Section */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up mb-8">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center"><div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3"><TrendingUp className="w-5 h-5 text-primary-600 dark:text-primary-400" /></div>الإحصائيات</h3>
-                <button onClick={goToPaymentHistory} className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/40 transition-colors"><ClipboardList className="w-4 h-4" />سجل المدفوعات</button>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3"><TrendingUp className="w-5 h-5 text-primary-600 dark:text-primary-400" /></div>
+                الإحصائيات
+            </h3>
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">الأرباح الصافية:</p>
+                    <p className="text-lg font-bold text-primary-600 dark:text-primary-400">{analyticsData.netProfit.toLocaleString('ar-IQ')} د.ع</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">حصة كل شريك:</p>
+                    <p className="text-lg font-bold text-primary-600 dark:text-primary-400">{(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p>
+                </div>
             </div>
-            <div className="mb-4"><p className="text-gray-600 dark:text-gray-400 mb-2">الأرباح الصافية: {analyticsData.netProfit.toLocaleString('ar-IQ')} د.ع</p><p className="text-gray-600 dark:text-gray-400 mb-4">حصة كل شريك: {(analyticsData.netProfit / 3).toLocaleString('ar-IQ')} د.ع</p></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="text-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                    <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">
+                        {Object.keys(analyticsData.workerShares).length}
+                    </div>
+                    <p className="text-sm font-bold text-indigo-800 dark:text-indigo-200">عدد العمال النشطين</p>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl border border-rose-200 dark:border-rose-800">
+                    <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 mb-2">
+                        {analyticsData.totalRevenue > 0 ? ((analyticsData.totalDiscounts / analyticsData.totalRevenue) * 100).toFixed(1) : '0'}%
+                    </div>
+                    <p className="text-sm font-bold text-rose-800 dark:text-rose-200">نسبة الخصومات</p>
+                </div>
+            </div>
         </div>
       </div>
 
