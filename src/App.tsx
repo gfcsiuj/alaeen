@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { BottomNavigation } from './components/BottomNavigation';
 import { AddOrder } from './components/AddOrder';
@@ -73,9 +74,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <Router>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </Router>
   );
 }
 
