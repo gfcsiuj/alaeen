@@ -10,26 +10,8 @@ interface PasswordConfirmProps {
 export function PasswordConfirm({ onConfirm, onCancel, actionType }: PasswordConfirmProps) {
   const { userRole } = useApp();
   
-  // نص العملية حسب النوع
-  const getActionText = () => {
-    switch (actionType) {
-      case 'add':
-        return 'إضافة طلب جديد';
-      case 'edit':
-        return 'تعديل الطلب';
-      case 'delete':
-        return 'حذف الطلب';
-      case 'payment':
-        return 'تسجيل دفع';
-      case 'deleteData':
-        return 'مسح جميع البيانات (محلياً وفي قاعدة البيانات)';
-      default:
-        return 'تنفيذ العملية';
-    }
-  };
-
-  // التحقق من صلاحيات المستخدم
-  const handleConfirm = () => {
+  // تنفيذ الإجراء فور تحميل المكون
+  useEffect(() => {
     // إذا كان المستخدم مشاهد وحاول تسجيل دفع، نمنعه
     if (userRole === 'viewer' && actionType === 'payment') {
       // إنشاء عنصر تحذير
@@ -60,40 +42,15 @@ export function PasswordConfirm({ onConfirm, onCancel, actionType }: PasswordCon
       return;
     }
     
-    // تنفيذ العملية مباشرة بدون طلب كلمة المرور
+    // تنفيذ العملية مباشرة بدون طلب تأكيد
     onConfirm();
-  };
+    
+    // تنظيف المكون
+    return () => {
+      // أي تنظيف ضروري
+    };
+  }, []); // تنفيذ مرة واحدة عند تحميل المكون
 
-  // عرض شاشة تأكيد بسيطة بدلاً من شاشة كلمة المرور
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="w-20 h-20 mx-auto bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center text-primary-600 dark:text-primary-400 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{getActionText()}</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">هل أنت متأكد من رغبتك في {getActionText()}؟</p>
-        </div>
-
-        <div className="flex space-x-3 space-x-reverse rtl:space-x-reverse">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="w-1/2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-3 px-4 rounded-lg font-medium transition-all duration-300"
-          >
-            إلغاء
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="w-1/2 bg-primary-500 hover:bg-primary-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300"
-          >
-            تأكيد
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // لا نعرض أي واجهة مستخدم لأننا ننفذ الإجراء مباشرة
+  return null;
 }

@@ -110,6 +110,10 @@ export function Analytics() {
             }));
           });
           
+          // تحديث المدفوعات من Firebase بعد تسجيل الدفع للعامل
+          // هذا يضمن تحديث البيانات في الواجهة وتجنب مشكلة التحديث المستمر
+          await refreshPayments();
+          
           // إزالة مؤشر التحميل
           if (document.body.contains(loadingDiv)) {
             document.body.removeChild(loadingDiv);
@@ -252,6 +256,10 @@ export function Analytics() {
           }));
         });
         
+        // تحديث المدفوعات من Firebase بعد تسجيل الدفع للشريك
+        // هذا يضمن تحديث البيانات في الواجهة وتجنب مشكلة التحديث المستمر
+        await refreshPayments();
+        
         // إزالة مؤشر التحميل إذا كان موجودًا
         const loadingElement = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50.flex.items-center.justify-center.z-50');
         if (loadingElement && document.body.contains(loadingElement)) {
@@ -391,7 +399,7 @@ export function Analytics() {
       }
     }
 
-    // تحديث المدفوعات من Firebase
+    // تحديث المدفوعات من Firebase مرة أخرى بعد كل العمليات
     await refreshPayments();
     
     // إعادة تعيين حالة الإجراء

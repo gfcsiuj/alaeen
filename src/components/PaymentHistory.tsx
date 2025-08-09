@@ -22,25 +22,110 @@ export function PaymentHistory() {
   
   // جلب المدفوعات من Firebase
   useEffect(() => {
+    // تعريف متغير للتحكم في إلغاء العملية
+    let isMounted = true;
+    let isInitialLoad = true;
+    
     const fetchPayments = async () => {
       try {
+        if (!isMounted) return;
         setLoading(true);
-        // استخدام refreshPayments لتحديث المدفوعات في AppContext
-        await refreshPayments();
-        // تطبيق الفلتر الزمني على المدفوعات
-        const filteredPayments = await getPaymentsByTimeFilter(timeFilter, customDays);
-        setPayments(filteredPayments);
-        setError(null);
+        
+        // استخدام المدفوعات من AppContext مباشرة بدلاً من إعادة جلبها
+        if (appPayments && appPayments.length > 0) {
+          console.log(`تطبيق الفلتر على ${appPayments.length} دفعة من السياق`);
+          
+          // تطبيق الفلتر الزمني على المدفوعات المتاحة بالفعل
+          let filteredPayments = [...appPayments];
+          
+          // تطبيق الفلتر الزمني يدويًا بدلاً من استدعاء API
+          if (timeFilter !== 'all') {
+            const now = new Date();
+            let cutoffDate = new Date();
+            
+            if (timeFilter === 'today') {
+              cutoffDate.setHours(0, 0, 0, 0);
+            } else if (timeFilter === 'week') {
+              cutoffDate.setDate(now.getDate() - 7);
+            } else if (timeFilter === 'month') {
+              cutoffDate.setMonth(now.getMonth() - 1);
+            } else if (timeFilter === 'custom' && customDays) {
+              cutoffDate.setDate(now.getDate() - parseInt(customDays));
+            }
+            
+            filteredPayments = filteredPayments.filter(payment => 
+              new Date(payment.date) >= cutoffDate
+            );
+          }
+          
+          if (isMounted) {
+            setPayments(filteredPayments);
+            setError(null);
+          }
+        } else {
+          // إذا لم تكن المدفوعات متاحة في السياق، نقوم بجلبها مرة واحدة
+          if (isMounted && isInitialLoad) {
+            console.log('جلب المدفوعات من Firebase لأول مرة');
+            await refreshPayments();
+            isInitialLoad = false;
+          }
+        }
       } catch (err) {
         console.error('خطأ في جلب المدفوعات:', err);
-        setError('حدث خطأ أثناء جلب سجل المدفوعات');
+        if (isMounted) {
+          setError('حدث خطأ أثناء جلب سجل المدفوعات');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     fetchPayments();
-  }, [timeFilter, customDays, refreshPayments]);
+    
+    // تنظيف عند إلغاء تحميل المكون
+    return () => {
+      isMounted = false;
+    };
+  }, [appPayments, timeFilter, customDays]);
+  
+  // تحديث المدفوعات عند تغيير الفلاتر
+  useEffect(() => {
+    // تطبيق الفلاتر على المدفوعات الحالية
+    if (appPayments && appPayments.length > 0) {
+      console.log('تطبيق الفلاتر على المدفوعات');
+      
+      // تأخير قصير لتجنب التحديثات المتكررة
+      const filterTimer = setTimeout(() => {
+        let filtered = [...appPayments];
+        
+        // تطبيق فلتر النوع
+        if (typeFilter !== 'all') {
+          filtered = filtered.filter(payment => payment.type === typeFilter);
+        }
+        
+        // تطبيق فلتر نوع الدفع
+        if (paymentTypeFilter !== 'all') {
+          filtered = filtered.filter(payment => payment.paymentType === paymentTypeFilter);
+        }
+        
+        // تطبيق فلتر البحث
+        if (searchTerm.trim()) {
+          const searchLower = searchTerm.toLowerCase();
+          filtered = filtered.filter(payment => 
+            payment.recipientName.toLowerCase().includes(searchLower) ||
+            payment.type.toLowerCase().includes(searchLower) ||
+            payment.paymentType.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        setPayments(filtered);
+      }, 300);
+      
+      return () => clearTimeout(filterTimer);
+    }
+  }, [appPayments, typeFilter, paymentTypeFilter, searchTerm]);
   
   // تطبيق الفلاتر والترتيب
   const filteredPayments = payments
@@ -130,12 +215,66 @@ export function PaymentHistory() {
       
       await deletePayment(paymentId);
       
+      // إضافة تأخير قصير قبل تحديث المدفوعات لضمان اكتمال عملية الحذف
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // تحديث المدفوعات من Firebase
       await refreshPayments();
-      
-      // تحديث قائمة المدفوعات المعروضة
-      const filteredPayments = await getPaymentsByTimeFilter(timeFilter, customDays);
-      setPayments(filteredPayments);
+
+      // تأخير إضافي قبل تحديث القائمة المعروضة
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // تحديث قائمة المدفوعات المعروضة بناءً على المدفوعات المحدثة في السياق
+      if (appPayments && appPayments.length > 0) {
+        console.log('تطبيق الفلاتر بعد الحذف');
+        let filtered = [...appPayments];
+        
+        // تطبيق الفلتر الزمني
+        if (timeFilter !== 'all') {
+          const now = new Date();
+          let cutoffDate = new Date();
+          
+          if (timeFilter === 'today') {
+            cutoffDate.setHours(0, 0, 0, 0);
+          } else if (timeFilter === 'week') {
+            cutoffDate.setDate(now.getDate() - 7);
+          } else if (timeFilter === 'month') {
+            cutoffDate.setMonth(now.getMonth() - 1);
+          } else if (timeFilter === 'custom' && customDays) {
+            cutoffDate.setDate(now.getDate() - parseInt(customDays));
+          }
+          
+          filtered = filtered.filter(payment => 
+            new Date(payment.date) >= cutoffDate
+          );
+        }
+        
+        // تطبيق فلتر النوع
+        if (typeFilter !== 'all') {
+          filtered = filtered.filter(payment => payment.type === typeFilter);
+        }
+        
+        // تطبيق فلتر نوع الدفع
+        if (paymentTypeFilter !== 'all') {
+          filtered = filtered.filter(payment => payment.paymentType === paymentTypeFilter);
+        }
+        
+        // تطبيق فلتر البحث
+        if (searchTerm.trim()) {
+          const searchLower = searchTerm.toLowerCase();
+          filtered = filtered.filter(payment => 
+            payment.recipientName.toLowerCase().includes(searchLower) ||
+            payment.type.toLowerCase().includes(searchLower) ||
+            payment.paymentType.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        setPayments(filtered);
+      } else {
+        // استخدام الطريقة القديمة كاحتياط
+        const filteredPayments = await getPaymentsByTimeFilter(timeFilter, customDays);
+        setPayments(filteredPayments);
+      }
       
       // إنشاء مودال نجاح
       const successModal = document.createElement('div');

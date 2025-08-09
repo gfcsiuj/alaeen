@@ -74,6 +74,10 @@ export const addPayment = async (payment: Omit<Payment, 'id'>, updateContext?: (
           updateContext(newPayment);
         }
         
+        // تأخير أطول لضمان اكتمال العملية وتحديث Firebase
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        console.log('تم الانتهاء من تأخير ما بعد إضافة الدفعة');
         return paymentId;
       } catch (error) {
         attempts++;
@@ -226,6 +230,9 @@ export const deletePayment = async (paymentId: string): Promise<void> => {
       try {
         await Promise.race([deletePromise, deleteTimeoutPromise]);
         console.log(`تم حذف الدفعة بنجاح بعد ${attempts + 1} محاولة`);
+        
+        // إضافة تأخير إضافي بعد الحذف الناجح لضمان تحديث Firebase
+        await new Promise(resolve => setTimeout(resolve, 1500));
         return;
       } catch (error) {
         attempts++;

@@ -179,11 +179,81 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshPayments = async () => {
     try {
       setIsSyncing(true);
-      const paymentsData = await getAllPayments();
+      console.log('جاري تحديث المدفوعات من Firebase...');
+      
+      // إضافة محاولات إعادة المحاولة للحصول على أحدث البيانات
+      let attempts = 0;
+      const maxAttempts = 3;
+      let paymentsData = [];
+      
+      // محاولة استرجاع المدفوعات المخزنة محليًا كنسخة احتياطية
+      try {
+        const cachedPayments = localStorage.getItem('al-ain-payments');
+        if (cachedPayments) {
+          const parsedPayments = JSON.parse(cachedPayments);
+          if (Array.isArray(parsedPayments) && parsedPayments.length > 0) {
+            console.log(`تم استرجاع ${parsedPayments.length} دفعة من التخزين المحلي`);
+            // تعيين المدفوعات المخزنة مؤقتًا بينما نحاول الحصول على البيانات المحدثة
+            setPayments(parsedPayments);
+          }
+        }
+      } catch (cacheError) {
+        console.warn('خطأ في استرجاع المدفوعات من التخزين المحلي:', cacheError);
+      }
+      
+      while (attempts < maxAttempts) {
+        try {
+          // إضافة تأخير قصير قبل جلب البيانات لضمان تحديث Firebase
+          if (attempts > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+          }
+          
+          paymentsData = await getAllPayments();
+          console.log(`تم الحصول على ${paymentsData.length} دفعة من Firebase بعد ${attempts + 1} محاولة`);
+          break;
+        } catch (fetchError) {
+          attempts++;
+          console.warn(`فشلت المحاولة ${attempts}/${maxAttempts} لتحديث المدفوعات:`, fetchError);
+          
+          if (attempts >= maxAttempts) {
+            throw fetchError;
+          }
+        }
+      }
+      
+      // تحديث حالة المدفوعات في السياق
       setPayments(paymentsData);
+      
+      // حفظ المدفوعات في التخزين المحلي كنسخة احتياطية
+      try {
+        localStorage.setItem('al-ain-payments', JSON.stringify(paymentsData));
+        console.log(`تم تخزين ${paymentsData.length} دفعة في التخزين المحلي`);
+      } catch (storageError) {
+        console.warn('خطأ في تخزين المدفوعات في التخزين المحلي:', storageError);
+      }
+      
+      // تأخير إضافي قبل إنهاء عملية التحديث
+      // هذا يضمن اكتمال جميع العمليات قبل إعادة التحميل
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('تم تحديث المدفوعات بنجاح');
       return paymentsData;
     } catch (error) {
       console.error('خطأ في تحديث المدفوعات:', error);
+      
+      // محاولة استرجاع المدفوعات من التخزين المحلي في حالة الفشل
+      try {
+        const cachedPayments = localStorage.getItem('al-ain-payments-cache');
+        if (cachedPayments) {
+          const parsedPayments = JSON.parse(cachedPayments);
+          console.log('تم استرجاع المدفوعات من التخزين المحلي:', parsedPayments.length);
+          setPayments(parsedPayments);
+          return parsedPayments;
+        }
+      } catch (cacheError) {
+        console.error('فشل في استرجاع المدفوعات من التخزين المحلي:', cacheError);
+      }
+      
       throw error;
     } finally {
       setIsSyncing(false);
