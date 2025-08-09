@@ -326,6 +326,57 @@ export function Analytics() {
     }
   };
 
+  const analyticsData = useMemo(() => {
+
+    const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.price, 0);
+
+    // حساب إجمالي أرباح العمولة من خدمة الترويج
+    const totalPromotionProfit = filteredOrders.reduce((sum, order) => {
+      // إذا كان نوع الخدمة هو الترويج وهناك عمولة، نضيفها إلى الأرباح
+      if (order.serviceType === 'promotion' && order.promotionCommission) {
+        return sum + (parseFloat(order.promotionCommission.toString()) || 0);
+      }
+      return sum;
+    }, 0);
+    const totalDiscounts = filteredOrders.reduce((sum, order) => {
+      const discount = order.discount || 0;
+      return sum + (order.discountType === 'percentage' ? (order.price * discount) / 100 : discount);
+    }, 0);
+    const totalTax = filteredOrders.reduce((sum, order) => {
+      const afterDiscount = order.price - (order.discount || 0);
+      return sum + ((afterDiscount * (order.tax || 0)) / 100);
+    }, 0);
+
+    // Worker shares calculation
+    const workerShares: Record<string, number> = {};
+    const totalWorkerShares = filteredOrders.reduce((sum, order) => {
+      const orderTotal = order.workers.reduce((workerSum, worker) => workerSum + worker.share, 0);
+      order.workers.forEach(worker => {
+        if (worker.name.trim()) {
+          workerShares[worker.name] = (workerShares[worker.name] || 0) + worker.share;
+        }
+      });
+      return sum + orderTotal;
+    }, 0);
+
+    // إضافة أرباح العمولة إلى الأرباح الصافية
+    const netProfit = totalRevenue - totalDiscounts + totalTax - totalWorkerShares + totalPromotionProfit;
+    const totalOrders = filteredOrders.length;
+
+    return {
+      totalRevenue,
+      totalDiscounts,
+      totalTax,
+      totalWorkerShares,
+      totalPromotionProfit,
+      netProfit,
+      totalOrders,
+      workerShares,
+      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      profitMargin: totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
+    };
+  }, [filteredOrders]);
+
   // تحديث حالة الدفع للعمال والشركاء بناءً على المدفوعات
   useEffect(() => {
     // تحديث حالة الدفع للعمال
@@ -420,57 +471,6 @@ export function Analytics() {
 
     setFilteredOrders(filtered);
   }, [orders, timeFilter, customDays]);
-
-  const analyticsData = useMemo(() => {
-
-    const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.price, 0);
-
-    // حساب إجمالي أرباح العمولة من خدمة الترويج
-    const totalPromotionProfit = filteredOrders.reduce((sum, order) => {
-      // إذا كان نوع الخدمة هو الترويج وهناك عمولة، نضيفها إلى الأرباح
-      if (order.serviceType === 'promotion' && order.promotionCommission) {
-        return sum + (parseFloat(order.promotionCommission.toString()) || 0);
-      }
-      return sum;
-    }, 0);
-    const totalDiscounts = filteredOrders.reduce((sum, order) => {
-      const discount = order.discount || 0;
-      return sum + (order.discountType === 'percentage' ? (order.price * discount) / 100 : discount);
-    }, 0);
-    const totalTax = filteredOrders.reduce((sum, order) => {
-      const afterDiscount = order.price - (order.discount || 0);
-      return sum + ((afterDiscount * (order.tax || 0)) / 100);
-    }, 0);
-
-    // Worker shares calculation
-    const workerShares: Record<string, number> = {};
-    const totalWorkerShares = filteredOrders.reduce((sum, order) => {
-      const orderTotal = order.workers.reduce((workerSum, worker) => workerSum + worker.share, 0);
-      order.workers.forEach(worker => {
-        if (worker.name.trim()) {
-          workerShares[worker.name] = (workerShares[worker.name] || 0) + worker.share;
-        }
-      });
-      return sum + orderTotal;
-    }, 0);
-
-    // إضافة أرباح العمولة إلى الأرباح الصافية
-    const netProfit = totalRevenue - totalDiscounts + totalTax - totalWorkerShares + totalPromotionProfit;
-    const totalOrders = filteredOrders.length;
-
-    return {
-      totalRevenue,
-      totalDiscounts,
-      totalTax,
-      totalWorkerShares,
-      totalPromotionProfit,
-      netProfit,
-      totalOrders,
-      workerShares,
-      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
-      profitMargin: totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
-    };
-  }, [filteredOrders]);
 
   const getFilterLabel = () => {
     switch (timeFilter) {
