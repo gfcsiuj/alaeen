@@ -4,7 +4,7 @@ export interface Order {
   orderDetails: string;
   price: number;
   quantity: number;
-  workers: { name: string; share: number; workType?: string; paymentStatus?: 'full' | 'partial' | 'none' }[];
+  workers: { name: string; share: number; workType?: string; paymentStatus?: 'full' | 'partial' | 'none'; amountPaid?: number }[];
   discount?: number;
   discountType?: 'fixed' | 'percentage';
   tax?: number;
