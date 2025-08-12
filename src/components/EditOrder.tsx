@@ -95,169 +95,68 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
   };
 
   const [formData, setFormData] = useState({
-    id: '',
     customerName: '',
     orderDetails: '',
-    price: 0,
-    quantity: 1,
+    price: '',
+    quantity: '1',
     workers: [{ name: '', share: 0, workType: '' }],
-    discount: 0,
+    discount: '',
     discountType: 'fixed' as 'fixed' | 'percentage',
-    tax: 0,
+    tax: '',
     notes: '',
     priority: 'medium' as 'low' | 'medium' | 'high',
     status: 'pending' as 'pending' | 'in-progress' | 'completed' | 'cancelled',
-    date: new Date(),
-    createdAt: new Date(),
-    serviceType: '' as 'promotion' | 'design' | 'photography' | 'printing' | 'other' | '',
+    serviceType: 'other' as 'promotion' | 'design' | 'photography' | 'printing' | 'other',
     // خدمة الترويج
-    promotionAmountUSD: 0, // مبلغ الترويج بالدولار
-    promotionAmount: 0, // مبلغ الترويج بالدينار العراقي
-    promotionCurrency: 'usd' as 'iqd' | 'usd',
-    promotionProfit: 0,
-    promotionCommission: 0, // عمولة الترويج
-    promotionAmountReceived: 'none' as 'full' | 'partial' | 'none', // حالة وصول المبلغ
-    promotionAmountReceivedPercentage: 0, // نسبة المبلغ الواصل
+    amountReceived: '', // المبلغ الواصل
+    promotionAmountUSD: '', // مبلغ الترويج بالدولار
+    promotionAmount: '', // مبلغ الترويج بالدينار العراقي (يتم حسابه تلقائياً)
+    promotionCommission: '', // عمولة الترويج
     // خدمة التصميم
-    designTypes: [] as string[],
+    designs: [{ type: '', quantity: 1 }],
     // خدمة التصوير
     photographyDetails: '',
-    photographyAmount: 0,
+    photographyAmount: '',
     photographerName: '',
-    photographerAmount: 0,
+    photographerAmount: '',
     // خدمة الطباعة
     printingDetails: '',
-    printingAmount: 0,
+    printingAmount: '',
     printingEmployeeName: '',
-    printingEmployeeAmount: 0
-  });
-
-  const [totals, setTotals] = useState({
-    originalPrice: 0,
-    discountAmount: 0,
-    afterDiscount: 0,
-    taxAmount: 0,
-    finalAmount: 0,
-    totalWorkerShares: 0
+    printingEmployeeAmount: '',
   });
 
   useEffect(() => {
-    // Initialize form data with order data
     if (order) {
-      console.log('Order received in EditOrder:', order);
-      console.log('Order ID:', order.id);
-      console.log('Order type:', typeof order);
-      console.log('Order date:', order.date, 'type:', typeof order.date);
-      console.log('Order createdAt:', order.createdAt, 'type:', typeof order.createdAt);
-      
-      try {
-        // التحقق من وجود معرف الطلب
-        if (!order.id) {
-          throw new Error('معرف الطلب مفقود');
-        }
-        
-        // Ensure dates are properly handled
-        let dateValue = order.date;
-        let createdAtValue = order.createdAt;
-        
-        // If date is a string, convert to Date object for form handling
-        if (typeof dateValue === 'string') {
-          try {
-            dateValue = new Date(dateValue);
-            if (isNaN(dateValue.getTime())) {
-              console.warn('Invalid date string format, using current date');
-              dateValue = new Date();
-            }
-          } catch (e) {
-            console.error('Error parsing date:', e);
-            dateValue = new Date(); // Fallback to current date
-          }
-        } else if (!(dateValue instanceof Date) || isNaN(dateValue.getTime())) {
-          console.warn('Date is not a valid Date object, using current date');
-          dateValue = new Date(); // Fallback to current date
-        }
-        
-        // If createdAt is a string, convert to Date object for form handling
-        if (typeof createdAtValue === 'string') {
-          try {
-            createdAtValue = new Date(createdAtValue);
-            if (isNaN(createdAtValue.getTime())) {
-              console.warn('Invalid createdAt string format, using current date');
-              createdAtValue = new Date();
-            }
-          } catch (e) {
-            console.error('Error parsing createdAt:', e);
-            createdAtValue = new Date(); // Fallback to current date
-          }
-        } else if (!(createdAtValue instanceof Date) || isNaN(createdAtValue.getTime())) {
-          console.warn('CreatedAt is not a valid Date object, using current date');
-          createdAtValue = new Date(); // Fallback to current date
-        }
-        
-        // التحقق من صحة البيانات الرقمية
-        const safeNumber = (value: any, defaultValue = 0) => {
-          const num = Number(value);
-          return !isNaN(num) ? num : defaultValue;
-        };
-        
-        // Create a complete form data object with all required fields
-        const completeFormData = {
-          ...order,
-          id: order.id,
-          customerName: order.customerName || '',
-          orderDetails: order.orderDetails || '',
-          price: safeNumber(order.price),
-          quantity: safeNumber(order.quantity, 1),
-          workers: Array.isArray(order.workers) ? order.workers : [{ name: '', share: 0, workType: '' }],
-          discount: safeNumber(order.discount),
-          discountType: order.discountType || 'fixed',
-          tax: safeNumber(order.tax),
-          notes: order.notes || '',
-          priority: order.priority || 'medium',
-          status: order.status || 'pending',
-          date: dateValue,
-          createdAt: createdAtValue,
-          serviceType: order.serviceType || '',
-          // خدمة الترويج
-          promotionAmountUSD: safeNumber(order.promotionAmountUSD),
-          promotionAmount: safeNumber(order.promotionAmount),
-          promotionCurrency: order.promotionCurrency || 'usd',
-          promotionProfit: safeNumber(order.promotionProfit),
-          promotionCommission: safeNumber(order.promotionCommission),
-          promotionAmountReceived: order.promotionAmountReceived || 'none',
-          promotionAmountReceivedPercentage: safeNumber(order.promotionAmountReceivedPercentage),
-          // خدمة التصميم
-          designTypes: Array.isArray(order.designTypes) ? order.designTypes : [],
-          // خدمة التصوير
-          photographyDetails: order.photographyDetails || '',
-          photographyAmount: safeNumber(order.photographyAmount),
-          photographerName: order.photographerName || '',
-          photographerAmount: safeNumber(order.photographerAmount),
-          // خدمة الطباعة
-          printingDetails: order.printingDetails || '',
-          printingAmount: safeNumber(order.printingAmount),
-          printingEmployeeName: order.printingEmployeeName || '',
-          printingEmployeeAmount: safeNumber(order.printingEmployeeAmount)
-        };
-        
-        console.log('Setting form data:', completeFormData);
-        setFormData(completeFormData);
-        // يمكن استخدام resetForm() هنا، ولكن نحن نقوم بتعيين البيانات مباشرة في هذه المرحلة
-      } catch (error) {
-        console.error('Error initializing form data:', error);
-        let errorMessage = 'حدث خطأ أثناء تحميل بيانات الطلب: ';
-        
-        if (error instanceof Error) {
-          errorMessage += error.message;
-        } else {
-          errorMessage += 'خطأ غير معروف';
-        }
-        
-        alert(errorMessage + '\n\nيرجى إعادة تحميل الصفحة والمحاولة مرة أخرى.');
-        onClose();
-      }
+      setFormData({
+        customerName: order.customerName || '',
+        orderDetails: order.orderDetails || '',
+        price: order.price ? String(order.price) : '',
+        quantity: order.quantity ? String(order.quantity) : '1',
+        workers: order.workers && order.workers.length > 0 ? order.workers : [{ name: '', share: 0, workType: '' }],
+        discount: order.discount ? String(order.discount) : '',
+        discountType: order.discountType || 'fixed',
+        tax: order.tax ? String(order.tax) : '',
+        notes: order.notes || '',
+        priority: order.priority || 'medium',
+        status: order.status || 'pending',
+        serviceType: order.serviceType || 'other',
+        amountReceived: order.amountReceived ? String(order.amountReceived) : '',
+        promotionAmountUSD: order.promotionAmountUSD ? String(order.promotionAmountUSD) : '',
+        promotionAmount: order.promotionAmount ? String(order.promotionAmount) : '',
+        promotionCommission: order.promotionCommission ? String(order.promotionCommission) : '',
+        designs: order.designs && order.designs.length > 0 ? order.designs : [{ type: '', quantity: 1 }],
+        photographyDetails: order.photographyDetails || '',
+        photographyAmount: order.photographyAmount ? String(order.photographyAmount) : '',
+        photographerName: order.photographerName || '',
+        photographerAmount: order.photographerAmount ? String(order.photographerAmount) : '',
+        printingDetails: order.printingDetails || '',
+        printingAmount: order.printingAmount ? String(order.printingAmount) : '',
+        printingEmployeeName: order.printingEmployeeName || '',
+        printingEmployeeAmount: order.printingEmployeeAmount ? String(order.printingEmployeeAmount) : '',
+      });
     }
-  }, [order, onClose]);
+  }, [order]);
 
   const addWorker = () => {
     setFormData(prev => ({
@@ -274,33 +173,84 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
   };
 
   const updateWorker = (index: number, field: 'name' | 'share' | 'workType', value: string | number) => {
-    setFormData(prev => {
-      const updatedWorkers = [...prev.workers];
-      updatedWorkers[index] = {
-        ...updatedWorkers[index],
-        [field]: value
-      };
-      return { ...prev, workers: updatedWorkers };
-    });
+    setFormData(prev => ({
+      ...prev,
+      workers: prev.workers.map((worker, i) =>
+        i === index ? { ...worker, [field]: value } : worker
+      )
+    }));
+  };
+
+  // Auto-calculate commission for promotion service
+  useEffect(() => {
+    if (formData.serviceType === 'promotion') {
+      const amountReceived = parseFloat(formData.amountReceived) || 0;
+      const promotionAmount = parseFloat(formData.promotionAmount) || 0;
+      const commission = amountReceived - promotionAmount;
+      setFormData(prev => ({
+        ...prev,
+        promotionCommission: commission > 0 ? commission.toString() : '0'
+      }));
+    }
+  }, [formData.amountReceived, formData.promotionAmount, formData.serviceType]);
+
+  const designTypeOptions = [
+    'بوست', 'فيديو', 'شعار', 'هويه بصريه', 'بروفايل شركات', 'واجهه موقع الكتروني',
+    'تصميم علب', 'موشن كرافيك', 'تصميم تقويم', 'غلاف كتاب', 'تصميم مجله',
+    'بروشر', 'رول اب', 'لوحه اعلانيه', 'ستاند موتمرات'
+  ];
+
+  const addDesign = () => {
+    setFormData(prev => ({
+      ...prev,
+      designs: [...prev.designs, { type: '', quantity: 1 }]
+    }));
+  };
+
+  const removeDesign = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      designs: prev.designs.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateDesign = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      designs: prev.designs.map((design, i) =>
+        i === index ? { ...design, [field]: value } : design
+      )
+    }));
   };
 
   const calculateTotals = () => {
-    const originalPrice = formData.price * formData.quantity;
+    const price = parseFloat(formData.price) || 0;
+    const discount = parseFloat(formData.discount) || 0;
+    const tax = parseFloat(formData.tax) || 0;
+    const promotionCommission = parseFloat(formData.promotionCommission) || 0;
+
     let discountAmount = 0;
+    if (formData.discountType === 'percentage') {
+      discountAmount = (price * discount) / 100;
+    } else {
+      discountAmount = discount;
+    }
+
+    const afterDiscount = price - discountAmount;
+    const taxAmount = (afterDiscount * tax) / 100;
+    let finalAmount = afterDiscount + taxAmount;
     
-    if (formData.discount) {
-      discountAmount = formData.discountType === 'percentage' 
-        ? (originalPrice * formData.discount / 100) 
-        : formData.discount;
+    // إذا كان نوع الخدمة هو الترويج، نستخدم العمولة كمبلغ نهائي
+    // لأن العمولة تحسب كربح بالدينار العراقي في الأرباح الصافية
+    if (formData.serviceType === 'promotion') {
+      // في حالة الترويج، المبلغ النهائي هو العمولة فقط
+      finalAmount = promotionCommission;
     }
     
-    const afterDiscount = originalPrice - discountAmount;
-    const taxAmount = formData.tax ? (afterDiscount * formData.tax / 100) : 0;
-    const finalAmount = afterDiscount + taxAmount;
-    const totalWorkerShares = formData.workers.reduce((total, worker) => total + worker.share, 0);
+    const totalWorkerShares = formData.workers.reduce((sum, worker) => sum + (worker.share || 0), 0);
     
     return {
-      originalPrice,
+      originalPrice: price,
       discountAmount,
       afterDiscount,
       taxAmount,
@@ -309,9 +259,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     };
   };
 
-  useEffect(() => {
-    setTotals(calculateTotals());
-  }, [formData]);
+  const totals = calculateTotals();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,175 +277,51 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
   // دالة تنفيذ تعديل الطلب بعد التحقق من كلمة المرور
   const executeOrderUpdate = async () => {
     setIsSubmitting(true);
-    setShowPasswordConfirm(false);
     
-    console.log('Form submission started');
-    console.log('Current formData:', formData);
-    console.log('Original order:', order);
-    
-    // Convert date objects to strings if needed
-    let dateStr = '';
-    let createdAtStr = '';
-    
-    // Handle date conversion
-    if (formData.date instanceof Date) {
-      dateStr = formData.date.toISOString();
-    } else if (typeof formData.date === 'string') {
-      dateStr = formData.date;
-    } else {
-      dateStr = new Date().toISOString(); // Fallback to current date
-      console.warn('Invalid date format, using current date');
-    }
-    
-    // Handle createdAt conversion
-    if (order.createdAt instanceof Date) {
-      createdAtStr = order.createdAt.toISOString();
-    } else if (typeof order.createdAt === 'string') {
-      createdAtStr = order.createdAt;
-    } else {
-      // If createdAt is missing or invalid, use the original order's createdAt or fallback
-      createdAtStr = dateStr; // Fallback to the same as date
-      console.warn('Invalid createdAt format, using date value');
-    }
-    
-    console.log('Date conversion - dateStr:', dateStr);
-    console.log('Date conversion - createdAtStr:', createdAtStr);
-    
-    // Create a clean base object with required fields
-    const baseOrder = {
-      id: formData.id, // Ensure ID is preserved
-      customerName: formData.customerName,
-      orderDetails: formData.orderDetails,
-      price: formData.price,
-      quantity: formData.quantity,
-      workers: formData.workers,
-      discount: formData.discount,
-      discountType: formData.discountType,
-      tax: formData.tax,
-      notes: formData.notes,
-      priority: formData.priority,
-      status: formData.status,
-      // Use the converted string dates
-      date: dateStr,
-      createdAt: createdAtStr,
-      serviceType: formData.serviceType || undefined
-    };
-    
-    console.log('Base order object created:', baseOrder);
-    
-    // Add service-specific fields based on serviceType
-    let serviceFields = {};
-    
-    if (formData.serviceType === 'promotion') {
-      serviceFields = {
-        promotionAmountUSD: formData.promotionAmountUSD,
-        promotionAmount: formData.promotionAmount,
-        promotionAmountReceived: formData.promotionAmountReceived,
-        promotionAmountReceivedPercentage: formData.promotionAmountReceivedPercentage,
-        promotionProfit: formData.promotionProfit,
-        promotionCurrency: formData.promotionCurrency,
-        promotionCommission: formData.promotionCommission
-      };
-    } else if (formData.serviceType === 'design') {
-      serviceFields = {
-        designTypes: formData.designTypes
-      };
-    } else if (formData.serviceType === 'photography') {
-      serviceFields = {
-        photographyDetails: formData.photographyDetails,
-        photographyAmount: formData.photographyAmount,
-        photographerName: formData.photographerName,
-        photographerAmount: formData.photographerAmount
-      };
-    } else if (formData.serviceType === 'printing') {
-      serviceFields = {
-        printingDetails: formData.printingDetails,
-        printingAmount: formData.printingAmount,
-        printingEmployeeName: formData.printingEmployeeName,
-        printingEmployeeAmount: formData.printingEmployeeAmount
-      };
-    }
-    
-    console.log('Service-specific fields:', serviceFields);
-    
-    // Combine base order with service-specific fields
-    const updatedOrder: Order = {
-      ...baseOrder,
-      ...serviceFields
-    };
-    
-    console.log('Updating order:', updatedOrder);
     try {
-      // التحقق من وجود البيانات الأساسية
-      if (!updatedOrder.id) {
-        throw new Error('معرف الطلب مفقود');
-      }
-      if (!updatedOrder.customerName) {
-        throw new Error('اسم العميل مفقود');
-      }
-      if (!updatedOrder.serviceType) {
-        throw new Error('نوع الخدمة مفقود');
-      }
-      
-      // التحقق من صحة البيانات الرقمية
-      if (isNaN(updatedOrder.price) || updatedOrder.price < 0) {
-        throw new Error('السعر غير صحيح');
-      }
-      if (isNaN(updatedOrder.quantity) || updatedOrder.quantity <= 0) {
-        throw new Error('الكمية غير صحيحة');
-      }
-      if (isNaN(updatedOrder.discount) || updatedOrder.discount < 0) {
-        throw new Error('الخصم غير صحيح');
-      }
-      if (isNaN(updatedOrder.tax) || updatedOrder.tax < 0) {
-        throw new Error('الضريبة غير صحيحة');
-      }
-      
-      // التحقق من صحة بيانات العاملين
-      if (updatedOrder.workers && updatedOrder.workers.length > 0) {
-        for (let i = 0; i < updatedOrder.workers.length; i++) {
-          const worker = updatedOrder.workers[i];
-          if (!worker.name) {
-            throw new Error(`اسم العامل #${i+1} مفقود`);
-          }
-          if (isNaN(worker.share) || worker.share < 0) {
-            throw new Error(`حصة العامل ${worker.name} غير صحيحة`);
-          }
-        }
-      }
+      const updatedOrderData: Order = {
+        id: order.id, // Keep the original ID
+        customerName: formData.customerName,
+        orderDetails: formData.orderDetails,
+        price: parseFloat(formData.price) || 0,
+        quantity: 1, // Default value, as quantity is now per-design
+        workers: formData.workers.filter(w => w.name.trim()),
+        discount: parseFloat(formData.discount) || 0,
+        discountType: formData.discountType,
+        tax: parseFloat(formData.tax) || 0,
+        notes: formData.notes,
+        priority: formData.priority,
+        status: formData.status,
+        date: new Date().toISOString(), // Update the date to now
+        createdAt: order.createdAt, // Keep the original creation date
+        serviceType: formData.serviceType,
+        // خدمة الترويج
+        amountReceived: parseFloat(formData.amountReceived) || 0,
+        promotionAmountUSD: parseFloat(formData.promotionAmountUSD) || 0,
+        promotionAmount: parseFloat(formData.promotionAmount) || 0,
+        promotionCommission: parseFloat(formData.promotionCommission) || 0,
+        // خدمة التصميم
+        designs: formData.designs.filter(d => d.type),
+        // خدمة التصوير
+        photographyDetails: formData.photographyDetails,
+        photographyAmount: parseFloat(formData.photographyAmount) || 0,
+        photographerName: formData.photographerName,
+        photographerAmount: parseFloat(formData.photographerAmount) || 0,
+        // خدمة الطباعة
+        printingDetails: formData.printingDetails,
+        printingAmount: parseFloat(formData.printingAmount) || 0,
+        printingEmployeeName: formData.printingEmployeeName,
+        printingEmployeeAmount: parseFloat(formData.printingEmployeeAmount) || 0,
+      };
 
-      if (!isOnline) {
-        throw new Error('لا يمكن تحديث الطلب بدون اتصال بالإنترنت');
-      }
-
-      // محاولة تحديث الطلب (الآن أصبحت دالة متزامنة)
-      await updateOrder(updatedOrder);
+      await updateOrder(updatedOrderData);
       
-      // تسجيل نجاح العملية
-      console.log('Order updated successfully');
-      
-      // عرض رسالة نجاح للمستخدم
       alert('تم تحديث الطلب بنجاح وتمت مزامنته مع جميع المستخدمين');
       
-      // إعادة تعيين النموذج إلى القيم المحدثة
-      resetForm();
-      
-      // إغلاق النافذة
-      onClose();
+      onClose(); // Close the modal on success
     } catch (error: any) {
-      // تسجيل الخطأ بالتفصيل
-      console.error('Error updating order:', error);
-      
-      // عرض رسالة خطأ مفصلة للمستخدم
-      let errorMessage = 'حدث خطأ أثناء تحديث الطلب: ';
-      
-      if (error instanceof Error) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += error.toString() || 'خطأ غير معروف';
-      }
-      
-      alert(errorMessage + '\n\nيرجى التحقق من البيانات والمحاولة مرة أخرى. إذا استمرت المشكلة، حاول إعادة تحميل الصفحة.');
+      console.error('خطأ في تحديث الطلب:', error);
+      alert(`حدث خطأ أثناء تحديث الطلب: ${error.message || 'يرجى المحاولة مرة أخرى'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -640,7 +464,7 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
               </div>
             </div>
 
-            {/* Service Type Specific Details */}
+            {/* Service Type Specific Fields */}
             {formData.serviceType === 'promotion' && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
@@ -650,21 +474,34 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
                   معلومات الترويج
                 </h2>
                 
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      مبلغ الترويج (دولار أمريكي) *
+                      المبلغ الواصل (دينار عراقي) *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.amountReceived}
+                      onChange={(e) => setFormData(prev => ({ ...prev, amountReceived: e.target.value }))}
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      مبلغ الترويج بالدولار *
                     </label>
                     <input
                       type="number"
                       value={formData.promotionAmountUSD}
                       onChange={(e) => {
-                        const usdAmount = parseFloat(e.target.value) || 0;
-                        const iqdAmount = usdAmount * 1380; // تحويل الدولار إلى دينار عراقي
+                        const usdAmount = e.target.value;
+                        const iqdAmount = parseFloat(usdAmount) * 1380 || '';
                         setFormData(prev => ({
                           ...prev,
                           promotionAmountUSD: usdAmount,
-                          promotionAmount: iqdAmount
+                          promotionAmount: iqdAmount.toString()
                         }));
                       }}
                       className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
@@ -674,381 +511,242 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
                   
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      مبلغ الترويج (دينار عراقي) - محسوب تلقائياً
+                      مبلغ الترويج بالدينار العراقي (تلقائي)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.promotionAmount ? parseFloat(formData.promotionAmount).toLocaleString('ar-IQ') : ''}
+                      readOnly
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white transition-all duration-300"
+                      placeholder="يتم الحساب تلقائياً"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      العمولة (تلقائي)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.promotionCommission ? parseFloat(formData.promotionCommission).toLocaleString('ar-IQ') : ''}
+                      readOnly
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white transition-all duration-300"
+                      placeholder="يتم الحساب تلقائياً"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Design service section removed as requested */}
+            
+            {/* Photography service section removed as requested */}
+            
+            {/* Printing service section removed as requested */}
+
+            {/* Basic Order Info */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
+                  <Plus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                </div>
+                {formData.serviceType === 'promotion' ? 'معلومات طلب الترويج' :
+                 formData.serviceType === 'design' ? 'معلومات طلب التصميم' :
+                 formData.serviceType === 'photography' ? 'معلومات طلب التصوير' :
+                 formData.serviceType === 'printing' ? 'معلومات طلب الطباعة' :
+                 'معلومات الطلب الأساسية'}
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    اسم العميل *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.customerName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    required
+                    placeholder="أدخل اسم العميل"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    تفاصيل الطلب *
+                  </label>
+                  <textarea
+                    value={formData.orderDetails}
+                    onChange={(e) => setFormData(prev => ({ ...prev, orderDetails: e.target.value }))}
+                    rows={4}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none transition-all duration-300 hover:shadow-md"
+                    required
+                    placeholder="وصف تفصيلي للطلب"
+                  />
+                </div>
+
+                {formData.serviceType !== 'promotion' && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                      السعر الأساسي (دينار عراقي) *
                     </label>
                     <input
                       type="number"
-                      value={formData.promotionAmount}
-                      readOnly
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white transition-all duration-300"
+                      value={formData.price}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                      required
                       placeholder="0"
                     />
                   </div>
+                )}
 
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      حالة وصول المبلغ *
-                    </label>
-                    <div className="flex flex-col space-y-2">
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          value="full"
-                          checked={formData.promotionAmountReceived === 'full'}
-                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: 0 }))}
-                          className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
-                        />
-                        <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل بالكامل</span>
-                      </label>
-                      
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          value="partial"
-                          checked={formData.promotionAmountReceived === 'partial'}
-                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none' }))}
-                          className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
-                        />
-                        <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">واصل جزئياً</span>
-                      </label>
-                      
-                      {formData.promotionAmountReceived === 'partial' && (
-                        <div className="mr-7 mt-2">
+                {formData.serviceType === 'design' && (
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">التصاميم المطلوبة</h3>
+                    {formData.designs.map((design, index) => (
+                      <div key={index} className="flex gap-4 items-end mb-4">
+                        <div className="flex-1">
+                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">نوع التصميم</label>
+                          <select
+                            value={design.type}
+                            onChange={(e) => updateDesign(index, 'type', e.target.value)}
+                            className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                          >
+                            <option value="">اختر نوع التصميم</option>
+                            {designTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </div>
+                        <div className="w-24">
+                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">العدد</label>
                           <input
                             type="number"
-                            value={formData.promotionAmountReceivedPercentage}
-                            onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceivedPercentage: parseFloat(e.target.value) || 0 }))}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300"
-                            placeholder="نسبة المبلغ الواصل"
+                            value={design.quantity}
+                            onChange={(e) => updateDesign(index, 'quantity', parseInt(e.target.value) || 1)}
+                            min="1"
+                            className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
                           />
                         </div>
-                      )}
-                      
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          value="none"
-                          checked={formData.promotionAmountReceived === 'none'}
-                          onChange={(e) => setFormData(prev => ({ ...prev, promotionAmountReceived: e.target.value as 'full' | 'partial' | 'none', promotionAmountReceivedPercentage: 0 }))}
-                          className="form-radio text-primary-600 border-gray-300 focus:ring-primary-500 h-5 w-5"
-                        />
-                        <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">غير واصل</span>
-                      </label>
-                    </div>
+                        {formData.designs.length > 1 && (
+                          <button type="button" onClick={() => removeDesign(index)} className="p-2 text-red-500 hover:bg-red-100 rounded-full"><X className="w-5 h-5"/></button>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button" onClick={addDesign} className="mt-2 bg-primary-100 text-primary-700 px-4 py-2 rounded-lg flex items-center text-sm font-bold hover:bg-primary-200">
+                      <Plus className="w-4 h-4 ml-1" /> إضافة تصميم آخر
+                    </button>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      العمولة (تحسب كربح) *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.promotionCommission}
-                      onChange={(e) => setFormData(prev => ({ ...prev, promotionCommission: parseFloat(e.target.value) || 0 }))}
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                      placeholder="0"
-                    />
-                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    الأولوية
+                  </label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
+                    className={`w-full px-4 py-4 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:shadow-md ${getPriorityColor(formData.priority)}`}
+                  >
+                    <option value="low">منخفضة</option>
+                    <option value="medium">متوسطة</option>
+                    <option value="high">عالية</option>
+                  </select>
                 </div>
-              </div>
-            )}
-            
-            {formData.serviceType === 'design' && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-                    <Palette className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  تفاصيل التصميم
-                </h2>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      أنواع التصميم
-                    </label>
-                    <div className="flex flex-wrap gap-3">
-                      {['لوجو', 'بوستر', 'بطاقة', 'بروشور', 'بانر', 'أخرى'].map(type => (
-                        <div 
-                          key={type}
-                          onClick={() => {
-                            setFormData(prev => {
-                              const types = [...prev.designTypes];
-                              if (types.includes(type)) {
-                                return { ...prev, designTypes: types.filter(t => t !== type) };
-                              } else {
-                                return { ...prev, designTypes: [...types, type] };
-                              }
-                            });
-                          }}
-                          className={`px-4 py-2 rounded-xl border cursor-pointer transition-all duration-300 ${formData.designTypes.includes(type) ? 'bg-primary-50 border-primary-500 shadow-md dark:bg-primary-900/30 dark:border-primary-500 text-primary-700 dark:text-primary-400' : 'bg-white border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
-                        >
-                          {type}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    حالة الطلب
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                    className={`w-full px-4 py-4 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:shadow-md ${getStatusColor(formData.status)}`}
+                  >
+                    <option value="pending">في الانتظار</option>
+                    <option value="in-progress">قيد التنفيذ</option>
+                    <option value="completed">مكتمل</option>
+                    <option value="cancelled">ملغي</option>
+                  </select>
                 </div>
-              </div>
-            )}
-            
-            {formData.serviceType === 'photography' && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-                    <Camera className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  تفاصيل التصوير
-                </h2>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      تفاصيل التصوير
-                    </label>
-                    <textarea
-                      value={formData.photographyDetails}
-                      onChange={(e) => setFormData(prev => ({ ...prev, photographyDetails: e.target.value }))}
-                      rows={4}
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none transition-all duration-300 hover:shadow-md"
-                      placeholder="تفاصيل عن نوع التصوير والمتطلبات..."
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      مبلغ المصور (دينار عراقي)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.photographerAmount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, photographerAmount: parseFloat(e.target.value) || 0 }))}
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {formData.serviceType === 'printing' && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center ml-3">
-                    <Printer className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  تفاصيل الطباعة
-                </h2>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      تفاصيل الطباعة
-                    </label>
-                    <textarea
-                      value={formData.printingDetails}
-                      onChange={(e) => setFormData(prev => ({ ...prev, printingDetails: e.target.value }))}
-                      rows={4}
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none transition-all duration-300 hover:shadow-md"
-                      placeholder="تفاصيل عن نوع الطباعة والمواد المستخدمة..."
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      مبلغ الطباعة (دينار عراقي)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.printingAmount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, printingAmount: parseFloat(e.target.value) || 0 }))}
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Basic Order Information */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  اسم العميل *
-                </label>
-                <input
-                  type="text"
-                  value={formData.customerName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                  required
-                  placeholder="أدخل اسم العميل"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  تفاصيل الطلب *
-                </label>
-                <textarea
-                  value={formData.orderDetails}
-                  onChange={(e) => setFormData(prev => ({ ...prev, orderDetails: e.target.value }))}
-                  rows={4}
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none transition-all duration-300 hover:shadow-md"
-                  required
-                  placeholder="وصف تفصيلي للطلب"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  السعر الأساسي (دينار عراقي) *
-                </label>
-                <input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                  required
-                  placeholder="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  العدد *
-                </label>
-                <input
-                  type="number"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
-                  min="1"
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                  required
-                  placeholder="1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  الأولوية
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
-                  className={`w-full px-4 py-4 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:shadow-md ${getPriorityColor(formData.priority)}`}
-                >
-                  <option value="low">منخفضة</option>
-                  <option value="medium">متوسطة</option>
-                  <option value="high">عالية</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  حالة الطلب
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                  className={`w-full px-4 py-4 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:shadow-md ${getStatusColor(formData.status)}`}
-                >
-                  <option value="pending">في الانتظار</option>
-                  <option value="in-progress">قيد التنفيذ</option>
-                  <option value="completed">مكتمل</option>
-                  <option value="cancelled">ملغي</option>
-                </select>
               </div>
             </div>
 
-            {/* Discount and Tax */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  الخصم
-                </label>
-                <input
-                  type="number"
-                  value={formData.discount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                  placeholder="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  نوع الخصم
-                </label>
-                <div className="flex gap-4">
-                  <div 
-                    onClick={() => setFormData(prev => ({ ...prev, discountType: 'fixed' }))}
-                    className={`flex-1 px-4 py-4 border rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-center ${formData.discountType === 'fixed' ? 'bg-primary-50 border-primary-500 text-primary-700 dark:bg-primary-900/30 dark:border-primary-500 dark:text-primary-400' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'}`}
-                  >
-                    مبلغ ثابت
-                  </div>
-                  <div 
-                    onClick={() => setFormData(prev => ({ ...prev, discountType: 'percentage' }))}
-                    className={`flex-1 px-4 py-4 border rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-center ${formData.discountType === 'percentage' ? 'bg-primary-50 border-primary-500 text-primary-700 dark:bg-primary-900/30 dark:border-primary-500 dark:text-primary-400' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'}`}
-                  >
-                    نسبة مئوية
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  الضريبة (%)
-                </label>
-                <input
-                  type="number"
-                  value={formData.tax}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tax: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            {/* Calculation Summary */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            {/* Discounts and Tax */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-slide-up">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center ml-3">
-                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <Calculator className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
-                ملخص الحساب
+                الخصومات والضرائب
               </h2>
               
-              <div className="space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-400">السعر الأصلي:</span>
-                  <span className="font-bold text-gray-800 dark:text-white">{totals.originalPrice.toLocaleString('ar-IQ')} دينار عراقي</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    الخصم
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.discount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, discount: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    placeholder="0"
+                  />
                 </div>
-                
-                {formData.discount > 0 && (
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-600 dark:text-gray-400">الخصم ({formData.discountType === 'percentage' ? `${formData.discount}%` : `${formData.discount.toLocaleString('ar-IQ')} د.ع`}):</span>
-                    <span className="font-bold text-red-600 dark:text-red-400">- {totals.discountAmount.toLocaleString('ar-IQ')} دينار عراقي</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-400">بعد الخصم:</span>
-                  <span className="font-bold text-gray-800 dark:text-white">{totals.afterDiscount.toLocaleString('ar-IQ')} دينار عراقي</span>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    نوع الخصم
+                  </label>
+                  <select
+                    value={formData.discountType}
+                    onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value as any }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                  >
+                    <option value="fixed">مبلغ ثابت</option>
+                    <option value="percentage">نسبة مئوية</option>
+                  </select>
                 </div>
-                
-                {formData.tax > 0 && (
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-600 dark:text-gray-400">الضريبة ({formData.tax}%):</span>
-                    <span className="font-bold text-blue-600 dark:text-blue-400">+ {totals.taxAmount.toLocaleString('ar-IQ')} دينار عراقي</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-600 dark:text-gray-400">المبلغ النهائي:</span>
-                  <span className="font-bold text-2xl text-primary-600 dark:text-primary-400">{totals.finalAmount.toLocaleString('ar-IQ')} دينار عراقي</span>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    الضريبة (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.tax}
+                    onChange={(e) => setFormData(prev => ({ ...prev, tax: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    placeholder="0"
+                  />
                 </div>
               </div>
+
+              {/* Calculation Summary */}
+              {(formData.price || formData.discount || formData.tax) && (
+                <div className="mt-6 p-4 bg-gradient-to-r from-primary-50 to-pink-50 dark:from-primary-900/20 dark:to-pink-900/20 rounded-xl border border-primary-200 dark:border-primary-800">
+                  <h3 className="font-bold text-primary-800 dark:text-primary-200 mb-3">ملخص الحسابات</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400">السعر الأساسي</p>
+                      <p className="font-bold text-gray-900 dark:text-white">{totals.originalPrice.toLocaleString('ar-IQ')} د.ع</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400">الخصم</p>
+                      <p className="font-bold text-red-600">-{totals.discountAmount.toLocaleString('ar-IQ')} د.ع</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400">الضريبة</p>
+                      <p className="font-bold text-blue-600">+{totals.taxAmount.toLocaleString('ar-IQ')} د.ع</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400">المبلغ النهائي</p>
+                      <p className="font-bold text-primary-600 text-lg">{totals.finalAmount.toLocaleString('ar-IQ')} د.ع</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Workers Section */}
@@ -1103,17 +801,24 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
                       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                         نوع العمل
                       </label>
-                      <div className="flex flex-wrap gap-3">
-                        {['تصميم', 'تصوير', 'طباعة', 'ترويج', 'أخرى'].map(type => (
-                          <div 
-                            key={type}
-                            onClick={() => updateWorker(index, 'workType', type)}
-                            className={`px-4 py-2 rounded-xl border cursor-pointer transition-all duration-300 ${worker.workType === type ? 'bg-primary-50 border-primary-500 shadow-md dark:bg-primary-900/30 dark:border-primary-500 text-primary-700 dark:text-primary-400' : 'bg-white border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
-                          >
-                            {type}
-                          </div>
-                        ))}
-                      </div>
+                      {formData.serviceType === 'design' ? (
+                        <select
+                          value={worker.workType}
+                          onChange={(e) => updateWorker(index, 'workType', e.target.value)}
+                          className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                        >
+                          <option value="">اختر نوع العمل</option>
+                          {designTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={worker.workType}
+                          onChange={(e) => updateWorker(index, 'workType', e.target.value)}
+                          placeholder="نوع العمل"
+                          className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1132,6 +837,11 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {(totals.finalAmount - totals.totalWorkerShares).toLocaleString('ar-IQ')} دينار عراقي
                   </p>
+                  {formData.serviceType === 'promotion' && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      (العمولة تحسب كربح بالدينار العراقي في الأرباح الصافية)
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
