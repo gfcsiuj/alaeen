@@ -9,41 +9,10 @@ interface EditOrderProps {
   onClose: () => void;
 }
 
-// New local component for the partial payment modal
-const PartialPaymentModal = ({ onConfirm, onCancel }) => {
-  const [amount, setAmount] = useState('');
-
-  const handleConfirm = () => {
-    if (amount && !isNaN(parseFloat(amount))) {
-      onConfirm(parseFloat(amount));
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
-        <h3 className="text-lg font-bold mb-4">إدخال المبلغ الواصل</h3>
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg mb-4"
-          placeholder="أدخل المبلغ"
-        />
-        <div className="flex justify-end gap-4">
-          <button onClick={onCancel} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">إلغاء</button>
-          <button onClick={handleConfirm} className="px-4 py-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600">تأكيد</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function EditOrder({ order, onClose }: EditOrderProps) {
   const { updateOrder, isOnline, isSyncing } = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-  const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
   
   // Add a close button handler with confirmation
   const handleClose = () => {
@@ -143,7 +112,6 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     promotionAmountUSD: '', // مبلغ الترويج بالدولار
     promotionAmount: '', // مبلغ الترويج بالدينار العراقي (يتم حسابه تلقائياً)
     promotionCommission: '', // عمولة الترويج
-    promotionProfit: '', // الربح من الترويج
     // خدمة التصميم
     designs: [{ type: '', quantity: 1 }],
     // خدمة التصوير
@@ -180,7 +148,6 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
         promotionAmountUSD: order.promotionAmountUSD ? String(order.promotionAmountUSD) : '',
         promotionAmount: order.promotionAmount ? String(order.promotionAmount) : '',
         promotionCommission: order.promotionCommission ? String(order.promotionCommission) : '',
-        promotionProfit: order.promotionProfit ? String(order.promotionProfit) : '',
         designs: order.designs && order.designs.length > 0 ? order.designs : [{ type: '', quantity: 1 }],
         photographyDetails: order.photographyDetails || '',
         photographyAmount: order.photographyAmount ? String(order.photographyAmount) : '',
@@ -219,44 +186,28 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
     }));
   };
 
-  // Auto-calculate profit for promotion service
+  // Auto-calculate commission for promotion service
   useEffect(() => {
     if (formData.serviceType === 'promotion') {
+      // Auto-fill worker share
       const promotionAmount = parseFloat(formData.promotionAmount) || 0;
-      const amountReceived = parseFloat(formData.amountReceived) || 0;
-      const commission = parseFloat(formData.promotionCommission) || 0;
-
-      const profit = commission + (amountReceived - promotionAmount);
-
-      setFormData(prev => ({
-        ...prev,
-        promotionProfit: profit.toString()
-      }));
-    }
-  }, [formData.amountReceived, formData.promotionAmount, formData.promotionCommission, formData.serviceType]);
-
-  useEffect(() => {
-    if (formData.serviceType === 'promotion') {
-      const amount = parseFloat(formData.promotionAmount) || 0;
-      const received = parseFloat(formData.amountReceived) || 0;
-
-      let status: 'full' | 'partial' | 'none' = 'none';
-      let percentage = 0;
-
-      if (received > 0) {
-        if (received >= amount) {
-          status = 'full';
-          percentage = 100;
-        } else {
-          status = 'partial';
-          percentage = amount > 0 ? Math.round((received / amount) * 100) : 0;
-        }
+      if (formData.workers.length > 0) {
+        setFormData(prev => {
+          const newWorkers = [...prev.workers];
+          // Only update if it hasn't been manually changed
+          if (newWorkers[0].share !== promotionAmount) {
+            newWorkers[0] = { ...newWorkers[0], share: promotionAmount, workType: 'ترويج' };
+            return { ...prev, workers: newWorkers };
+          }
+          return prev;
+        });
       }
 
+      const amountReceived = parseFloat(formData.amountReceived) || 0;
+      const commission = amountReceived - promotionAmount;
       setFormData(prev => ({
         ...prev,
-        promotionAmountReceived: status,
-        promotionAmountReceivedPercentage: percentage
+        promotionCommission: commission > 0 ? commission.toString() : '0'
       }));
     }
   }, [formData.amountReceived, formData.promotionAmount, formData.serviceType]);
@@ -365,9 +316,6 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
         promotionAmountUSD: parseFloat(formData.promotionAmountUSD) || 0,
         promotionAmount: parseFloat(formData.promotionAmount) || 0,
         promotionCommission: parseFloat(formData.promotionCommission) || 0,
-        promotionProfit: parseFloat(formData.promotionProfit) || 0,
-        promotionAmountReceived: formData.promotionAmountReceived,
-        promotionAmountReceivedPercentage: formData.promotionAmountReceivedPercentage,
         // خدمة التصميم
         designs: formData.designs.filter(d => d.type),
         // خدمة التصوير
@@ -595,51 +543,20 @@ export default function EditOrder({ order, onClose }: EditOrderProps) {
                   
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      العمولة
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.promotionCommission}
-                      onChange={(e) => setFormData(prev => ({ ...prev, promotionCommission: e.target.value }))}
-                      className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
-                      placeholder="ادخل العمولة"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                      الربح (تلقائي)
+                      العمولة (تلقائي)
                     </label>
                     <input
                       type="text"
-                      value={formData.promotionProfit ? parseFloat(formData.promotionProfit).toLocaleString('ar-IQ') : ''}
+                      value={formData.promotionCommission ? parseFloat(formData.promotionCommission).toLocaleString('ar-IQ') : ''}
                       readOnly
                       className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white transition-all duration-300"
                       placeholder="يتم الحساب تلقائياً"
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowPartialPaymentModal(true)}
-                      className="w-full px-4 py-4 border border-dashed border-primary-500 text-primary-500 rounded-xl hover:bg-primary-50 transition-all duration-300"
-                    >
-                      إدخال دفعة جزئية
-                    </button>
-                  </div>
                 </div>
               </div>
             )}
             
-            {showPartialPaymentModal && (
-              <PartialPaymentModal
-                onConfirm={(amount) => {
-                  setFormData(prev => ({ ...prev, amountReceived: String(amount) }));
-                  setShowPartialPaymentModal(false);
-                }}
-                onCancel={() => setShowPartialPaymentModal(false)}
-              />
-            )}
-
             {/* Design service section removed as requested */}
             
             {/* Photography service section removed as requested */}
