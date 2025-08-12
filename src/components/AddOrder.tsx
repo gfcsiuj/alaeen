@@ -26,6 +26,7 @@ export function AddOrder() {
     promotionAmountUSD: '', // مبلغ الترويج بالدولار
     promotionAmount: '', // مبلغ الترويج بالدينار العراقي (يتم حسابه تلقائياً)
     promotionCommission: '', // عمولة الترويج
+    promotionProfit: '', // الربح من الترويج
     // خدمة التصميم
     designs: [{ type: '', quantity: 1 }],
     // خدمة التصوير
@@ -55,27 +56,21 @@ export function AddOrder() {
     }));
   };
 
-  // Auto-calculate commission for promotion service
+  // Auto-calculate profit for promotion service
   useEffect(() => {
     if (formData.serviceType === 'promotion') {
-      // Auto-fill worker share
       const promotionAmount = parseFloat(formData.promotionAmount) || 0;
-      if (formData.workers.length > 0) {
-        setFormData(prev => {
-          const newWorkers = [...prev.workers];
-          newWorkers[0] = { ...newWorkers[0], share: promotionAmount, workType: 'ترويج' };
-          return { ...prev, workers: newWorkers };
-        });
-      }
-
       const amountReceived = parseFloat(formData.amountReceived) || 0;
-      const commission = amountReceived - promotionAmount;
+      const commission = parseFloat(formData.promotionCommission) || 0;
+
+      const profit = commission + (amountReceived - promotionAmount);
+
       setFormData(prev => ({
         ...prev,
-        promotionCommission: commission > 0 ? commission.toString() : '0'
+        promotionProfit: profit.toString()
       }));
     }
-  }, [formData.amountReceived, formData.promotionAmount, formData.serviceType]);
+  }, [formData.amountReceived, formData.promotionAmount, formData.promotionCommission, formData.serviceType]);
 
   const removeWorker = (index: number) => {
     setFormData(prev => ({
@@ -234,6 +229,7 @@ export function AddOrder() {
         promotionAmountUSD: parseFloat(formData.promotionAmountUSD) || 0,
         promotionAmount: parseFloat(formData.promotionAmount) || 0,
         promotionCommission: parseFloat(formData.promotionCommission) || 0,
+        promotionProfit: parseFloat(formData.promotionProfit) || 0,
         // خدمة التصميم
         designs: formData.designs.filter(d => d.type),
         // خدمة التصوير
@@ -424,11 +420,23 @@ export function AddOrder() {
                 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                    العمولة (تلقائي)
+                    العمولة
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.promotionCommission}
+                    onChange={(e) => setFormData(prev => ({ ...prev, promotionCommission: e.target.value }))}
+                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                    placeholder="ادخل العمولة"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    الربح (تلقائي)
                   </label>
                   <input
                     type="text"
-                    value={formData.promotionCommission ? parseFloat(formData.promotionCommission).toLocaleString('ar-IQ') : ''}
+                    value={formData.promotionProfit ? parseFloat(formData.promotionProfit).toLocaleString('ar-IQ') : ''}
                     readOnly
                     className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white transition-all duration-300"
                     placeholder="يتم الحساب تلقائياً"
