@@ -13,7 +13,7 @@ export function AddOrder() {
     orderDetails: '',
     price: '',
     quantity: '1',
-    workers: [{ name: '', share: 0, workType: '' }],
+    workers: [{ name: '', share: 0, workType: '', paymentStatus: 'none', amountPaid: 0 }],
     discount: '',
     discountType: 'fixed' as 'fixed' | 'percentage',
     tax: '',
@@ -44,7 +44,7 @@ export function AddOrder() {
   });
 
   const addWorker = () => {
-    const newWorker = { name: '', share: 0, workType: '' };
+    const newWorker = { name: '', share: 0, workType: '', paymentStatus: 'none' as 'full' | 'partial' | 'none', amountPaid: 0 };
     if (formData.serviceType === 'promotion') {
       newWorker.share = parseFloat(formData.promotionAmount) || 0;
       newWorker.workType = 'ترويج';
@@ -84,7 +84,7 @@ export function AddOrder() {
     }));
   };
 
-  const updateWorker = (index: number, field: 'name' | 'share' | 'workType', value: string | number) => {
+  const updateWorker = (index: number, field: 'name' | 'share' | 'workType' | 'paymentStatus' | 'amountPaid', value: string | number) => {
     setFormData(prev => ({
       ...prev,
       workers: prev.workers.map((worker, i) => 
@@ -162,7 +162,7 @@ export function AddOrder() {
       orderDetails: '',
       price: '',
       quantity: '1',
-      workers: [{ name: '', share: 0, workType: '' }],
+      workers: [{ name: '', share: 0, workType: '', paymentStatus: 'none' as 'full' | 'partial' | 'none', amountPaid: 0 }],
       discount: '',
       discountType: 'fixed',
       tax: '',
@@ -770,7 +770,7 @@ export function AddOrder() {
                                 name={`workerPaymentStatus-${index}`}
                                 value={status}
                                 checked={worker.paymentStatus === status}
-                                onChange={(e) => updateWorker(index, 'paymentStatus', e.target.value)}
+                                onChange={(e) => updateWorker(index, 'paymentStatus', e.target.value as 'full' | 'partial' | 'none')}
                                 className="form-radio text-primary-600"
                               />
                               <span className="text-gray-700 dark:text-gray-300">
@@ -779,6 +779,21 @@ export function AddOrder() {
                             </label>
                           ))}
                         </div>
+
+                        {worker.paymentStatus === 'partial' && (
+                          <div className="mt-4">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                              المبلغ المدفوع
+                            </label>
+                            <input
+                              type="number"
+                              value={worker.amountPaid || ''}
+                              onChange={(e) => updateWorker(index, 'amountPaid', parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                              placeholder="أدخل المبلغ المدفوع"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                 </div>
@@ -796,7 +811,10 @@ export function AddOrder() {
               <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-300 dark:border-green-700">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">صافي الربح:</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {(totals.finalAmount - totals.totalWorkerShares).toLocaleString('ar-IQ')} دينار عراقي
+                  {(formData.serviceType === 'promotion'
+                    ? totals.finalAmount
+                    : totals.finalAmount - totals.totalWorkerShares
+                  ).toLocaleString('ar-IQ')} دينار عراقي
                 </p>
                 {formData.serviceType === 'promotion' && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
