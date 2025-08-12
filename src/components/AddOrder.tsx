@@ -38,6 +38,9 @@ export function AddOrder() {
     printingAmount: '',
     printingEmployeeName: '',
     printingEmployeeAmount: '',
+    // حالة السعر لخدمة "أخرى"
+    priceStatus: 'full' as 'full' | 'partial' | 'none',
+    amountPaid: '',
   });
 
   const addWorker = () => {
@@ -55,8 +58,17 @@ export function AddOrder() {
   // Auto-calculate commission for promotion service
   useEffect(() => {
     if (formData.serviceType === 'promotion') {
-      const amountReceived = parseFloat(formData.amountReceived) || 0;
+      // Auto-fill worker share
       const promotionAmount = parseFloat(formData.promotionAmount) || 0;
+      if (formData.workers.length > 0) {
+        setFormData(prev => {
+          const newWorkers = [...prev.workers];
+          newWorkers[0] = { ...newWorkers[0], share: promotionAmount, workType: 'ترويج' };
+          return { ...prev, workers: newWorkers };
+        });
+      }
+
+      const amountReceived = parseFloat(formData.amountReceived) || 0;
       const commission = amountReceived - promotionAmount;
       setFormData(prev => ({
         ...prev,
@@ -114,7 +126,6 @@ export function AddOrder() {
     const price = parseFloat(formData.price) || 0;
     const discount = parseFloat(formData.discount) || 0;
     const tax = parseFloat(formData.tax) || 0;
-    const promotionCommission = parseFloat(formData.promotionCommission) || 0;
     
     let discountAmount = 0;
     if (formData.discountType === 'percentage') {
@@ -127,14 +138,13 @@ export function AddOrder() {
     const taxAmount = (afterDiscount * tax) / 100;
     let finalAmount = afterDiscount + taxAmount;
     
-    // إذا كان نوع الخدمة هو الترويج، نستخدم العمولة كمبلغ نهائي
-    // لأن العمولة تحسب كربح بالدينار العراقي في الأرباح الصافية
-    if (formData.serviceType === 'promotion') {
-      // في حالة الترويج، المبلغ النهائي هو العمولة فقط
-      finalAmount = promotionCommission;
-    }
-    
     const totalWorkerShares = formData.workers.reduce((sum, worker) => sum + (worker.share || 0), 0);
+
+    if (formData.serviceType === 'promotion') {
+      const amountReceived = parseFloat(formData.amountReceived) || 0;
+      const adjustedCommission = amountReceived - totalWorkerShares;
+      finalAmount = adjustedCommission;
+    }
     
     return {
       originalPrice: price,
@@ -236,6 +246,9 @@ export function AddOrder() {
         printingAmount: parseFloat(formData.printingAmount) || 0,
         printingEmployeeName: formData.printingEmployeeName,
         printingEmployeeAmount: parseFloat(formData.printingEmployeeAmount) || 0,
+        // New fields
+        priceStatus: formData.priceStatus,
+        amountPaid: parseFloat(formData.amountPaid) || 0,
       };
 
       // استخدام الدالة الجديدة لإضافة الطلب
@@ -556,6 +569,44 @@ export function AddOrder() {
                   <option value="cancelled">ملغي</option>
                 </select>
               </div>
+
+              {formData.serviceType === 'other' && (
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">حالة السعر</h3>
+                  <div className="flex flex-wrap gap-4">
+                    {(['full', 'partial', 'none'] as const).map(status => (
+                      <label key={status} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="priceStatus"
+                          value={status}
+                          checked={formData.priceStatus === status}
+                          onChange={(e) => setFormData(prev => ({ ...prev, priceStatus: e.target.value as any, amountPaid: '' }))}
+                          className="form-radio text-primary-600"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {status === 'full' ? 'واصل بالكامل' : status === 'partial' ? 'واصل جزئياً' : 'لم يصل'}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {formData.priceStatus === 'partial' && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        المبلغ الواصل
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.amountPaid}
+                        onChange={(e) => setFormData(prev => ({ ...prev, amountPaid: e.target.value }))}
+                        className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-300 hover:shadow-md"
+                        placeholder="أدخل المبلغ الواصل"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -707,6 +758,29 @@ export function AddOrder() {
                       />
                     )}
                   </div>
+
+                    {formData.serviceType === 'promotion' && (
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">حالة الدفع للعامل</label>
+                        <div className="flex flex-wrap gap-4">
+                          {(['full', 'partial', 'none'] as const).map(status => (
+                            <label key={status} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`workerPaymentStatus-${index}`}
+                                value={status}
+                                checked={worker.paymentStatus === status}
+                                onChange={(e) => updateWorker(index, 'paymentStatus', e.target.value)}
+                                className="form-radio text-primary-600"
+                              />
+                              <span className="text-gray-700 dark:text-gray-300">
+                                {status === 'full' ? 'مدفوع بالكامل' : status === 'partial' ? 'مدفوع جزئياً' : 'لم يدفع'}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                 </div>
               ))}
             </div>
@@ -780,20 +854,8 @@ export function AddOrder() {
 
           <div className="flex gap-4 mt-8">
             <button
-              type="button"
-              onClick={() => resetForm()}
-              className="w-1/3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
-              disabled={isSubmitting}
-            >
-              <div className="flex items-center justify-center">
-                <X className="w-5 h-5 ml-2" />
-                إلغاء
-              </div>
-            </button>
-            
-            <button
               type="submit"
-              className="w-2/3 bg-gradient-to-r from-primary-500 to-pink-500 hover:from-primary-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:transform-none disabled:shadow-none"
+              className="w-full bg-gradient-to-r from-primary-500 to-pink-500 hover:from-primary-600 hover:to-pink-600 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:transform-none disabled:shadow-none"
               disabled={isSubmitting}
             >
               <div className="flex items-center justify-center">
