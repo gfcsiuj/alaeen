@@ -20,10 +20,11 @@ export interface Order {
   promotionAmountUSD?: number; // مبلغ الترويج بالدولار
   promotionAmount?: number; // مبلغ الترويج بالدينار العراقي (يتم حسابه تلقائياً)
   promotionCurrency?: 'iqd' | 'usd';
-  promotionProfit?: number;
   promotionCommission?: number; // عمولة الترويج
+  promotionProfit?: number;
   promotionAmountReceived?: 'full' | 'partial' | 'none'; // حالة وصول المبلغ
   promotionAmountReceivedPercentage?: number; // نسبة المبلغ الواصل في حالة الوصول الجزئي
+  amountReceived?: number;
   // خدمة التصميم
   designTypes?: string[];
   // خدمة التصوير
