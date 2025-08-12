@@ -4,7 +4,7 @@ export interface Order {
   orderDetails: string;
   price: number;
   quantity: number;
-  workers: { name: string; share: number; workType?: string }[];
+  workers: { name: string; share: number; workType?: string; paymentStatus?: 'full' | 'partial' | 'none' }[];
   discount?: number;
   discountType?: 'fixed' | 'percentage';
   tax?: number;
@@ -36,6 +36,10 @@ export interface Order {
   printingAmount?: number;
   printingEmployeeName?: string;
   printingEmployeeAmount?: number;
+
+  // New fields for "Other" service price status
+  priceStatus?: 'full' | 'partial' | 'none';
+  amountPaid?: number;
 }
 
 export interface Settings {

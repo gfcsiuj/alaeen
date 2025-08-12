@@ -331,6 +331,27 @@ export function Analytics() {
           <p className="text-gray-600 dark:text-gray-400">تحليل شامل للأرباح والأداء المالي</p>
         </div>
 
+        {useMemo(() => {
+          const unpaidOtherOrders = orders.filter(order =>
+            order.serviceType === 'other' &&
+            (order.priceStatus === 'none' || order.priceStatus === 'partial')
+          );
+
+          if (unpaidOtherOrders.length === 0) {
+            return null;
+          }
+
+          return (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-8" role="alert">
+              <p className="font-bold">تنبيه: طلبات غير مدفوعة</p>
+              <p>
+                يوجد {unpaidOtherOrders.length} طلبات من نوع "أخرى" لم يتم دفعها بالكامل.
+                العملاء: {unpaidOtherOrders.map(o => o.customerName).join(', ')}
+              </p>
+            </div>
+          );
+        }, [orders])}
+
         {/* Time Filter */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-8 animate-slide-up">
           <div className="flex items-center gap-4 flex-wrap">
