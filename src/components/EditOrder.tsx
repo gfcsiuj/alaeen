@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Star, Plus, X, AlertCircle, Megaphone, Palette, Camera, Printer, DollarSign, Users, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Star, Plus, X, AlertCircle, Megaphone, Palette, Camera, Printer, DollarSign, Users, Wifi, WifiOff, Loader2, Calculator } from 'lucide-react';
 import { Order } from '../types';
 import { PasswordConfirm } from './PasswordConfirm';
 
