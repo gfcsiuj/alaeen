@@ -22,6 +22,8 @@ interface AppContextType {
   updateOrder: (updatedOrder: Order) => Promise<void>;
   isOnline: boolean; // حالة الاتصال بالإنترنت
   isSyncing: boolean; // حالة المزامنة مع Firebase
+  editingOrder: Order | null;
+  setEditingOrder: (order: Order | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   // استخدام useState بدلاً من useLocalStorage
   const [orders, setLocalOrders] = useState<Order[]>([]);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [settings, setSettings] = useState<Settings>({
     theme: 'light',
@@ -558,6 +561,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateOrder,
         isOnline,
         isSyncing,
+        editingOrder,
+        setEditingOrder,
       }}
     >
       {children}

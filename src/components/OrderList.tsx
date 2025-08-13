@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Search, Filter, Calendar, User, Package, DollarSign, Users, Edit3, Trash2, Eye } from 'lucide-react';
-import EditOrder from './EditOrder';
 import { Order } from '../types';
 import { PasswordConfirm } from './PasswordConfirm';
 
 export default function OrderList() {
-  const { orders, deleteOrder, userRole } = useApp();
+  const { orders, deleteOrder, userRole, setEditingOrder } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   
@@ -237,17 +235,7 @@ export default function OrderList() {
                   {userRole === 'admin' && (
                     <>
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('Edit button clicked, order:', order);
-                          console.log('Order ID:', order.id);
-                          console.log('Order data type check:', typeof order);
-                          // Create a deep copy of the order to avoid reference issues
-                          const orderCopy = JSON.parse(JSON.stringify(order));
-                          console.log('Order copy created:', orderCopy);
-                          setOrderToEdit(orderCopy);
-                        }}
+                        onClick={() => setEditingOrder(order)}
                         className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -505,21 +493,6 @@ export default function OrderList() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Order Modal */}
-      {orderToEdit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg md:max-w-4xl max-h-[90vh] overflow-y-auto">
-            <EditOrder 
-              order={orderToEdit} 
-              onClose={() => {
-                console.log('Closing edit modal');
-                setOrderToEdit(null);
-              }} 
-            />
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import { AppProvider, useApp } from './contexts/AppContext';
 import { BottomNavigation } from './components/BottomNavigation';
 import { AddOrder } from './components/AddOrder';
 import OrderList from './components/OrderList';
+import EditOrder from './components/EditOrder';
 import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
 import { PinLogin } from './components/PinLogin';
@@ -12,7 +13,7 @@ import { Loader } from './components/Loader';
 import { PaymentHistory } from './components/PaymentHistory';
 
 function AppContent() {
-  const { settings, isAuthenticated, userRole } = useApp();
+  const { settings, isAuthenticated, userRole, editingOrder, setEditingOrder } = useApp();
   const [activeTab, setActiveTab] = useState('analytics');
   const [loading, setLoading] = useState(true);
 
@@ -45,9 +46,12 @@ function AppContent() {
   }
 
   const renderContent = () => {
+    if (editingOrder && userRole === 'admin') {
+      return <EditOrder order={editingOrder} onFinishEditing={() => setEditingOrder(null)} />;
+    }
+
     switch (activeTab) {
       case 'add':
-        // عرض مكون إضافة طلب فقط للمدير
         return userRole === 'admin' ? <AddOrder /> : <Analytics />;
       case 'orders':
         return <OrderList />;
@@ -67,7 +71,7 @@ function AppContent() {
       <main className="relative">
         {renderContent()}
       </main>
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      {!editingOrder && <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />}
     </div>
   );
 }
